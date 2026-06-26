@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Type-check, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm exec next lint || true
+        # `|| true` until we tune the rules; flip to hard-fail in a follow-up PR
+
+      - name: Tests
+        run: pnpm exec vitest run --passWithNoTests
+
+      - name: Build
+        # Stub env so the build succeeds without prod secrets. Routes that
+        # initialize SDKs at module top-level (e.g. Groq) need these.
+        env:
+          GROQ_API_KEY: stub
+          CEREBRAS_API_KEY: stub
+          OPENROUTER_API_KEY: stub
+          SAMBANOVA_API_KEY: stub
+          ALPACA_API_KEY: stub
+          ALPACA_SECRET_KEY: stub
+          ALPACA_PAPER: 'true'
+          ALPHA_VANTAGE_KEY: stub
+          TURSO_DATABASE_URL: libsql://stub.turso.io
+          TURSO_AUTH_TOKEN: stub
+          UPSTASH_REDIS_REST_URL: https://stub.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: stub
+          CRON_SECRET: stub
+          VAPID_EMAIL: noreply@example.com
+          VAPID_PUBLIC_KEY: stub
+          VAPID_PRIVATE_KEY: stub
+          NEXT_PUBLIC_APP_URL: https://stub.vercel.app
+        run: pnpm exec next build

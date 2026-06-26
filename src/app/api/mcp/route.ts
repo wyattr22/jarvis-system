@@ -3,17 +3,23 @@
 //   POST /api/mcp  → JSON-RPC request/response (single-shot, for any client)
 //   GET  /api/mcp  → reserved for SSE streaming (lands in 1.5)
 //
-// Auth lands in 1.4 — until then the route uses an unauthenticated "noauth"
-// context with the wildcard scope so curl tests work. The first real tools
-// (1.6) won't ship until 1.4 is merged so this temporary opening is safe.
+// Bearer-token auth (1.4): every request must carry `Authorization: Bearer ...`
+// matching either a row in `mcp_clients` (per-project) or CRON_SECRET (admin).
 
 import { dispatch, type JsonRpcRequest } from "@/lib/mcp/server"
+import { authenticateRequest } from "@/lib/mcp/auth"
 
-// Reserved here for the moment dispatch grows real tools that need extra time.
-// Vercel's default is 300s on hobby.
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  const auth = await authenticateRequest(req)
+  if (!auth.ok) {
+    return Response.json(
+      { jsonrpc: "2.0", id: null, error: { code: -32001, message: auth.message } },
+      { status: auth.status },
+    )
+  }
+
   let body: unknown
   try {
     body = await req.json()
@@ -32,9 +38,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // TEMPORARY: wildcard scope. Real auth lands in 1.4.
-  const ctx = { clientId: "noauth", scopes: ["*"] }
-  const result = await dispatch(rpc, ctx)
+  const result = await dispatch(rpc, auth.ctx)
   return Response.json(result)
 }
 

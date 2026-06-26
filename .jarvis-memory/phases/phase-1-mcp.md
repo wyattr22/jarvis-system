@@ -75,4 +75,17 @@ curl -X POST <url>/api/admin/mcp-clients \
 # Returns: { id, token (shown ONCE), scopes }
 ```
 
-Next: 1.5 SSE GET handler.
+### 1.5 — SSE GET handler (branch `phase-1.5/mcp-sse-handler`)
+
+GET `/api/mcp` opens a Server-Sent Events stream for clients that prefer the
+long-lived bidirectional pattern (Claude Desktop via `mcp-remote`).
+
+- Bearer auth required (same as POST)
+- First event: `event: endpoint\ndata: <postUrl>\n\n` tells the client where
+  to send RPC requests
+- Keepalive `: keepalive <ts>` comment every 15s
+- Abort signal cleanly closes the interval + stream
+
+Vercel function timeout caps the stream lifetime; clients reconnect.
+
+Next: 1.6 first 3 tools.

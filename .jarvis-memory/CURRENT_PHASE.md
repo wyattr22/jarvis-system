@@ -1,9 +1,12 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 1.6 — first 3 MCP tools (branch `phase-1.6/mcp-tools-first-batch`)
+**Active step:** 1.8 — remaining 3 MCP tools (branch `phase-1.8/mcp-tools-second-batch`)
 
-PRs #1–6 in flight, all stacked. After they merge + branch protection turns
+1.7 (Claude Desktop smoke test) is the only post-deploy step and needs the
+live URL — runs after the stack merges.
+
+PRs #1–7 in flight, all stacked. After they merge + branch protection turns
 on, future work uses single-PR branches off `main`.
 
 ## What's in flight right now

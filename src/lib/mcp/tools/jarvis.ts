@@ -9,8 +9,10 @@
 // and call from here.
 
 import { z, registerTool } from "@/lib/mcp/server"
-import { getAllMemories } from "@/lib/memory/store"
+import { getAllMemories, saveMemory, type MemoryType } from "@/lib/memory/store"
 import { getAccountGated, getPositionsGated } from "@/lib/data/gated"
+import { getSourceQualitySnapshot } from "@/lib/sandbox/quality"
+import { safeFetch } from "@/lib/sandbox/whitelist"
 import { db } from "@/lib/db/client"
 
 // ── memory.search ──────────────────────────────────────────────
@@ -90,6 +92,82 @@ registerTool({
       account_confidence: accountR.confidence,
       positions: Array.isArray(positionsR.data) ? positionsR.data : [],
       positions_confidence: positionsR.confidence,
+    }
+  },
+})
+
+// ── memory.save ───────────────────────────────────────────────
+// Append a new memory. Importance 1-10 (default 5). Source defaults to
+// 'system' which makes it clear an MCP client wrote this.
+registerTool({
+  name: "memory.save",
+  description: "Save a new memory to Jarvis's persistent store. Use for facts, insights, patterns, or preferences that should survive across conversations.",
+  inputSchema: z.object({
+    content: z.string().min(1).max(2000),
+    type: z.enum(["fact", "insight", "pattern", "preference", "correction"]).default("fact"),
+    tags: z.array(z.string()).default([]),
+    importance: z.number().int().min(1).max(10).default(5),
+  }),
+  requiredScope: "write:memory",
+  handler: async (input: { content: string; type: MemoryType; tags: string[]; importance: number }) => {
+    const id = await saveMemory(input.content, input.type, {
+      tags: input.tags,
+      importance: input.importance,
+      source: "system",
+    })
+    return { id, ok: true }
+  },
+})
+
+// ── source_quality.snapshot ───────────────────────────────────
+// Current source confidence table — same data the /source-quality dashboard
+// renders. Useful for clients to detect degraded feeds before reasoning.
+registerTool({
+  name: "source_quality.snapshot",
+  description: "Get the current source quality table — per-source confidence, 24h pass rate, and last fetch time. Sources with confidence < 0.5 are quarantined (stripped from LLM context).",
+  inputSchema: z.object({}),
+  requiredScope: "read:account",  // same scope as account — observability surface
+  handler: async () => {
+    const snapshot = await getSourceQualitySnapshot()
+    const quarantined = snapshot.filter(s => s.last_confidence < 0.5)
+    return {
+      sources: snapshot,
+      quarantined_count: quarantined.length,
+      threshold: 0.5,
+    }
+  },
+})
+
+// ── voice.ask ─────────────────────────────────────────────────
+// Routes a query through Jarvis's voice handler. Lets MCP clients pose
+// natural-language questions and get Jarvis's full reasoning + market
+// context applied. Implemented as an HTTP call to the existing /api/voice
+// route so we don't duplicate the pipeline.
+registerTool({
+  name: "voice.ask",
+  description: "Ask Jarvis a question and get the full voice-pipeline response — runs through market context, memories, research, and the LLM chain. Returns the spoken text.",
+  inputSchema: z.object({
+    query: z.string().min(1).max(2000),
+    chartSymbol: z.string().optional().describe("If the user is viewing a specific chart, pass the ticker here for richer context."),
+  }),
+  requiredScope: "read:account",  // voice exposes account data in responses
+  handler: async (input: { query: string; chartSymbol?: string }) => {
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://jarvis-system-flame.vercel.app"
+    const r = await safeFetch(`${base}/api/voice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: input.query, chartSymbol: input.chartSymbol }),
+      signal: AbortSignal.timeout(45_000),
+    })
+    if (!r.ok) {
+      return { ok: false, status: r.status, error: await r.text().catch(() => "voice route error") }
+    }
+    const data = await r.json()
+    return {
+      ok: true,
+      response: data.response,
+      tickers: data.tickers ?? [],
+      action: data.action ?? null,
     }
   },
 })

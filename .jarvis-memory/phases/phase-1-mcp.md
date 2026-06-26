@@ -115,4 +115,51 @@ curl -X POST <url>/api/mcp -H "Authorization: Bearer $TOKEN" \
 # → equity, positions, confidence scores
 ```
 
-Next: 1.7 smoke test from Claude Desktop / Claude Code.
+### 1.8 — Remaining 3 MCP tools (branch `phase-1.8/mcp-tools-second-batch`)
+
+Added the second batch of tools to `src/lib/mcp/tools/jarvis.ts`:
+
+- `memory.save` (scope `write:memory`) — appends a memory. Validates
+  type ∈ {fact, insight, pattern, preference, correction}, importance 1-10.
+- `source_quality.snapshot` (scope `read:account`) — current source
+  confidence table, same data the `/source-quality` dashboard renders.
+- `voice.ask` (scope `read:account`) — full voice-pipeline question. Routes
+  through `/api/voice` via `safeFetch` for sandbox consistency. Returns the
+  response text + detected tickers + action object.
+
+All six MCP tools (3 from 1.6 + 3 from 1.8) now registered.
+
+### 1.7 — Smoke test from Claude clients (post-deploy)
+
+After the stack merges, register a client and connect:
+
+```bash
+# Register a personal token
+curl -X POST https://jarvis-system-flame.vercel.app/api/admin/mcp-clients \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"claude-desktop","scopes":["read:memory","write:memory","read:signals","read:account"]}'
+# Save the token returned
+
+# Claude Desktop: add to claude_desktop_config.json
+# (uses mcp-remote bridge for HTTP+SSE → stdio):
+{
+  "mcpServers": {
+    "jarvis": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://jarvis-system-flame.vercel.app/api/mcp",
+               "--header", "Authorization: Bearer <token>"]
+    }
+  }
+}
+
+# Claude Code:
+claude mcp add --transport http jarvis https://jarvis-system-flame.vercel.app/api/mcp \
+  --header "Authorization: Bearer <token>"
+```
+
+Then in Claude Desktop / Code:
+- `Use the jarvis MCP to list my recent memories`
+- `Get my account snapshot from jarvis`
+
+Phase 1 complete after smoke test passes.

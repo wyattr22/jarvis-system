@@ -31,5 +31,18 @@ Built `src/lib/mcp/server.ts` as a pure, transport-agnostic core:
 
 Test coverage: `src/lib/mcp/server.test.ts` — 9 cases, all passing.
 
-Next: 1.3 wraps `dispatch()` in `src/app/api/mcp/route.ts` HTTP POST handler.
-Auth (1.4) lands as a separate PR; for now the route can use a fake context.
+### 1.3 — MCP HTTP POST handler (branch `phase-1.3/mcp-http-handler`)
+
+- `src/app/api/mcp/route.ts` — POST wraps `dispatch()` with a JSON-RPC
+  envelope check (-32700 on parse error, -32600 on invalid request shape).
+- GET returns 501 for now; SSE streaming lands in 1.5.
+- TEMPORARY: context uses `scopes: ["*"]` (wildcard). Real auth lands in 1.4.
+  Safe because no tools are registered yet — `tools/list` returns `[]`.
+
+Verification after deploy:
+```
+curl -X POST https://jarvis-system-flame.vercel.app/api/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+Expected response: `{"jsonrpc":"2.0","id":1,"result":{"tools":[]}}`

@@ -1,10 +1,10 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 1.2 — MCP server scaffold (branch `phase-1.2/mcp-server-scaffold`)
+**Active step:** 1.3 — MCP HTTP POST handler (branch `phase-1.3/mcp-http-handler`)
 
-Phase 0 PR #1 + 1.1 PR #2 in flight. Working forward on stacked branches so
-we don't lose momentum waiting for review.
+PRs #1 (Phase 0), #2 (1.1), #3 (1.2) in flight. Stacked PR chain. Working
+forward — auth lands in 1.4, real tools in 1.6+.
 
 ## What's in flight right now
 

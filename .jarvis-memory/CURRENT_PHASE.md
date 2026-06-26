@@ -1,10 +1,10 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 1.1 — install `@modelcontextprotocol/sdk` (branch `phase-1.1/install-mcp-sdk`)
+**Active step:** 1.2 — MCP server scaffold (branch `phase-1.2/mcp-server-scaffold`)
 
-Phase 0 is complete — PR #1 in flight, awaiting merge. Working forward on
-stacked branches so we don't lose momentum waiting for review.
+Phase 0 PR #1 + 1.1 PR #2 in flight. Working forward on stacked branches so
+we don't lose momentum waiting for review.
 
 ## What's in flight right now
 

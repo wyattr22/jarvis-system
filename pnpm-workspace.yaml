@@ -1,0 +1,8 @@
+allowBuilds:
+  msw: true
+  protobufjs: set this to true or false
+  sharp: true
+onlyBuiltDependencies:
+  - sharp
+  - msw
+  - "@libsql/client"

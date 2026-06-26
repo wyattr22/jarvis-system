@@ -1,0 +1,130 @@
+import { safeFetch } from "@/lib/sandbox/whitelist"
+
+export type ModelFamily = "llama" | "qwen" | "deepseek" | "mistral" | "gemma"
+export type ProviderName = "groq" | "cerebras" | "sambanova" | "openrouter" | "cloudflare"
+
+export interface ModelSpec {
+  provider: ProviderName
+  modelId: string
+  family: ModelFamily
+  contextWindow: number
+  dailyQuota: number
+  rpm: number
+}
+
+export const MODELS: Record<string, ModelSpec> = {
+  "groq-llama-70b": {
+    provider: "groq",
+    modelId: "llama-3.3-70b-versatile",
+    family: "llama",
+    contextWindow: 128000,
+    dailyQuota: 500000,
+    rpm: 30,
+  },
+  "groq-llama-8b": {
+    provider: "groq",
+    modelId: "llama-3.1-8b-instant",
+    family: "llama",
+    contextWindow: 128000,
+    dailyQuota: 500000,
+    rpm: 30,
+  },
+  "cerebras-llama-70b": {
+    provider: "cerebras",
+    modelId: "llama-3.3-70b",
+    family: "llama",
+    contextWindow: 128000,
+    dailyQuota: 1000000,
+    rpm: 30,
+  },
+  "cerebras-qwen-32b": {
+    provider: "cerebras",
+    modelId: "qwen-3-32b",
+    family: "qwen",
+    contextWindow: 32000,
+    dailyQuota: 1000000,
+    rpm: 30,
+  },
+  "openrouter-deepseek-r1": {
+    provider: "openrouter",
+    modelId: "deepseek/deepseek-r1:free",
+    family: "deepseek",
+    contextWindow: 64000,
+    dailyQuota: 200,
+    rpm: 10,
+  },
+}
+
+export type ProviderRequest = {
+  model: ModelSpec
+  messages: { role: "system" | "user" | "assistant"; content: string }[]
+  temperature?: number
+  maxTokens?: number
+}
+
+async function callGroq(req: ProviderRequest): Promise<string> {
+  const res = await safeFetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: req.model.modelId,
+      messages: req.messages,
+      temperature: req.temperature ?? 0.3,
+      max_tokens: req.maxTokens ?? 4096,
+    }),
+  })
+  if (!res.ok) throw new Error(`Groq error: ${res.status}`)
+  const json = await res.json()
+  return json.choices[0].message.content
+}
+
+async function callCerebras(req: ProviderRequest): Promise<string> {
+  const res = await safeFetch("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.CEREBRAS_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: req.model.modelId,
+      messages: req.messages,
+      temperature: req.temperature ?? 0.3,
+      max_tokens: req.maxTokens ?? 4096,
+    }),
+  })
+  if (!res.ok) throw new Error(`Cerebras error: ${res.status}`)
+  const json = await res.json()
+  return json.choices[0].message.content
+}
+
+async function callOpenRouter(req: ProviderRequest): Promise<string> {
+  const res = await safeFetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "HTTP-Referer": "https://jarvis-system.vercel.app",
+    },
+    body: JSON.stringify({
+      model: req.model.modelId,
+      messages: req.messages,
+      temperature: req.temperature ?? 0.3,
+      max_tokens: req.maxTokens ?? 4096,
+    }),
+  })
+  if (!res.ok) throw new Error(`OpenRouter error: ${res.status}`)
+  const json = await res.json()
+  return json.choices[0].message.content
+}
+
+export async function callProvider(req: ProviderRequest): Promise<string> {
+  switch (req.model.provider) {
+    case "groq": return callGroq(req)
+    case "cerebras": return callCerebras(req)
+    case "openrouter": return callOpenRouter(req)
+    default: throw new Error(`Provider ${req.model.provider} not implemented`)
+  }
+}

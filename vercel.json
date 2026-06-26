@@ -1,0 +1,32 @@
+{
+  "crons": [
+    {
+      "path": "/api/features/compute",
+      "schedule": "30 20 * * 1-5"
+    },
+    {
+      "path": "/api/drift/check",
+      "schedule": "0 21 * * 1-5"
+    },
+    {
+      "path": "/api/council/orchestrate",
+      "schedule": "0 18 * * 0"
+    },
+    {
+      "path": "/api/brief/generate",
+      "schedule": "0 13 * * 1-5"
+    },
+    {
+      "path": "/api/sync/fills",
+      "schedule": "30 21 * * 1-5"
+    },
+    {
+      "path": "/api/sync/proposal-outcomes",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/sync/meta-enforce",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

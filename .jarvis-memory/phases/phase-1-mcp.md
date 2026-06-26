@@ -88,4 +88,31 @@ long-lived bidirectional pattern (Claude Desktop via `mcp-remote`).
 
 Vercel function timeout caps the stream lifetime; clients reconnect.
 
-Next: 1.6 first 3 tools.
+### 1.6 — First 3 MCP tools (branch `phase-1.6/mcp-tools-first-batch`)
+
+Built `src/lib/mcp/tools/jarvis.ts` with the first 3 read-only tools:
+
+- `memory.search` (scope `read:memory`) — searches the existing `jarvis_memory`
+  table via `getAllMemories()`. Optional `tag` filter.
+- `signals.list` (scope `read:signals`) — recent rows from `signals` table
+  with optional status filter.
+- `account.snapshot` (scope `read:account`) — gated account + positions via
+  `getAccountGated()`/`getPositionsGated()`. Returns confidence scores so
+  callers can detect degraded data.
+
+Side-effect import in `src/app/api/mcp/route.ts` registers them at boot.
+Also made `registerTool` idempotent so hot-reload doesn't crash dev mode.
+
+Verification after deploy (assuming a client token with all 3 scopes):
+```
+curl -X POST <url>/api/mcp -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+# → 3 tools
+
+curl -X POST <url>/api/mcp -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+       "params":{"name":"account.snapshot","arguments":{}}}'
+# → equity, positions, confidence scores
+```
+
+Next: 1.7 smoke test from Claude Desktop / Claude Code.

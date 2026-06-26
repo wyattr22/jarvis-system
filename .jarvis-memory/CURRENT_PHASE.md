@@ -1,9 +1,9 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 1.5 — SSE GET handler (branch `phase-1.5/mcp-sse-handler`)
+**Active step:** 1.6 — first 3 MCP tools (branch `phase-1.6/mcp-tools-first-batch`)
 
-PRs #1–5 in flight, all stacked. After they merge + branch protection turns
+PRs #1–6 in flight, all stacked. After they merge + branch protection turns
 on, future work uses single-PR branches off `main`.
 
 ## What's in flight right now

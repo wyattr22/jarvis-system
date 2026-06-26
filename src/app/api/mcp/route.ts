@@ -8,6 +8,9 @@
 
 import { dispatch, type JsonRpcRequest } from "@/lib/mcp/server"
 import { authenticateRequest } from "@/lib/mcp/auth"
+// Side-effect import: registers all Jarvis-native tools at module load.
+// Add new tool files here as they land.
+import "@/lib/mcp/tools/jarvis"
 
 export const maxDuration = 60
 

@@ -31,10 +31,10 @@ export type ToolDef<T = unknown> = {
 
 const registry = new Map<string, ToolDef<unknown>>()
 
+// Idempotent: re-registering with the same name replaces the previous entry.
+// This avoids dev-mode crashes when Next.js hot-reloads a tools file.
+// In production each function cold-start gets a fresh registry anyway.
 export function registerTool<T>(def: ToolDef<T>): void {
-  if (registry.has(def.name)) {
-    throw new Error(`MCP tool already registered: ${def.name}`)
-  }
   registry.set(def.name, def as ToolDef<unknown>)
 }
 

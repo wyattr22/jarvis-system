@@ -1,7 +1,10 @@
 # Current Phase
 
-**Active phase:** Phase 0 — Dev Workflow + Cross-Session Memory
-**Active step:** 0a.4–0d.4 bundled in PR `phase-0/workflow-foundation`
+**Active phase:** Phase 1 — MCP Foundation
+**Active step:** 1.1 — install `@modelcontextprotocol/sdk` (branch `phase-1.1/install-mcp-sdk`)
+
+Phase 0 is complete — PR #1 in flight, awaiting merge. Working forward on
+stacked branches so we don't lose momentum waiting for review.
 
 ## What's in flight right now
 
@@ -21,14 +24,18 @@ exist before any feature PR can flow:
 - 0d.3 Seed CURRENT_PHASE.md + DECISIONS.md ✓ (this file)
 - 0d.4 `src/lib/jarvis-memory/read.ts` reader
 
-## Next up after PR merges
+## Phase 1 queue
 
-**Phase 1.1 — Install MCP SDK** on a new branch `phase-1.1/install-mcp-sdk`:
-- `pnpm add @modelcontextprotocol/sdk` (zod already installed)
-- type-check, commit, push, PR, merge.
+- 1.1 install `@modelcontextprotocol/sdk` ← branch open
+- 1.2 `src/lib/mcp/server.ts` scaffold (empty tool registry)
+- 1.3 `src/app/api/mcp/route.ts` POST handler (JSON-RPC tools/list + tools/call)
+- 1.4 `mcp_clients` table + bearer auth middleware
+- 1.5 SSE GET handler for streaming clients
+- 1.6 first 3 tools: `memory.search`, `signals.list`, `account.snapshot`
+- 1.7 smoke test from Claude Desktop / Claude Code
+- 1.8 remaining 3 tools: `memory.save`, `source_quality.snapshot`, `voice.ask`
 
-Then 1.2 → 1.3 → ... one branch per step. See the plan at
-`/Users/wyattrantz/.claude/plans/ive-had-an-idea-curried-dawn.md`.
+See plan at `/Users/wyattrantz/.claude/plans/ive-had-an-idea-curried-dawn.md`.
 
 ## Stop-checkpoint reminder
 

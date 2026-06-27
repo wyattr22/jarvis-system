@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 3.4 — adapter registry + brokers MCP tools (branch `phase-3.4/adapter-registry`)
+**Active step:** 4.1 — risk_config (branch `phase-4.1/risk-config`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

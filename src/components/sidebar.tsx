@@ -17,6 +17,7 @@ const NAV = [
   { href: "/drift",         label: "DRIFT",         group: "execution" },
   { href: "/source-quality",label: "SOURCES",       group: "execution" },
   { href: "/opportunities", label: "OPPORTUNITIES", group: "execution" },
+  { href: "/allocator",     label: "ALLOCATOR",     group: "execution" },
   { href: "/proposals",     label: "PROPOSALS",     group: "council" },
   { href: "/experiments",   label: "EXPERIMENTS",   group: "council" },
   { href: "/council",       label: "COUNCIL",       group: "council" },

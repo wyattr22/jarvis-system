@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 4.4 — allocator dry-run endpoint (branch `phase-4.4/allocator-dryrun`)
+**Active step:** 4.5 — allocator UI (branch `phase-4.5/allocator-ui`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

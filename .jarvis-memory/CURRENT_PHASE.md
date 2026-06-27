@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 3.2 — AlpacaAdapter (branch `phase-3.2/alpaca-adapter`)
+**Active step:** 3.3 — stub adapters (branch `phase-3.3/stub-adapters`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

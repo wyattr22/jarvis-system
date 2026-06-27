@@ -121,4 +121,19 @@ as splitwatch:
 5. Add a push helper that POSTs detected setups to `/api/opportunities/ingest`
    with `source: 'swing'`
 
-Next: 2.8 approve/reject/mute UI on the opportunities page.
+### 2.8 — Approve/reject/mute UI (branch `phase-2.8/opportunities-actions`)
+
+- `PATCH /api/opportunities/[id]` — status update endpoint, no auth
+  (dashboard-internal). Zod-validates status enum, writes to audit_log.
+- Actions column on `/opportunities` table:
+  - `open` rows: Approve (→ claimed), Reject (→ rejected), Mute (→ muted)
+  - non-open rows: Reopen (→ open)
+- Refresh after each action so the row reflects new state immediately.
+
+Phase 2 Jarvis-side work is now complete. Outstanding cross-repo PRs:
+- 2.5 splitwatch repo push wiring
+- 2.7 swing repo push wiring
+
+Both documented above with full step-by-step recipes.
+
+Next plan section: Phase 3 — multi-asset adapter layer.

@@ -55,20 +55,31 @@ export default function OpportunitiesPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("")
   const [statusFilter, setStatusFilter] = useState<string>("open")
 
+  const load = () => {
+    const qs = new URLSearchParams()
+    if (sourceFilter) qs.set("source", sourceFilter)
+    if (statusFilter) qs.set("status", statusFilter)
+    fetch(`/api/opportunities?${qs.toString()}`)
+      .then(r => r.json())
+      .then((d: ApiResponse) => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }
+
   useEffect(() => {
-    const load = () => {
-      const qs = new URLSearchParams()
-      if (sourceFilter) qs.set("source", sourceFilter)
-      if (statusFilter) qs.set("status", statusFilter)
-      fetch(`/api/opportunities?${qs.toString()}`)
-        .then(r => r.json())
-        .then((d: ApiResponse) => { setData(d); setLoading(false) })
-        .catch(() => setLoading(false))
-    }
     load()
     const id = setInterval(load, 20_000)
     return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceFilter, statusFilter])
+
+  async function setStatus(id: string, status: Opportunity["status"]) {
+    await fetch(`/api/opportunities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    })
+    load()
+  }
 
   const sources = [...new Set(data?.opportunities.map(o => o.source) ?? [])]
 
@@ -125,6 +136,7 @@ export default function OpportunitiesPage() {
               <th style={thRight}>Conf</th>
               <th style={thRight}>Age</th>
               <th style={th}>Status</th>
+              <th style={th}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -157,12 +169,40 @@ export default function OpportunitiesPage() {
                     fontWeight: 600,
                   }}>{o.status}</span>
                 </td>
+                <td style={td}>
+                  {o.status === "open" ? (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <ActionBtn label="approve" color="#00d4a1" onClick={() => setStatus(o.id, "claimed")} />
+                      <ActionBtn label="reject"  color="#ff5c5c" onClick={() => setStatus(o.id, "rejected")} />
+                      <ActionBtn label="mute"    color="#6b7280" onClick={() => setStatus(o.id, "muted")} />
+                    </div>
+                  ) : (
+                    <ActionBtn label="reopen" color="#33ccff" onClick={() => setStatus(o.id, "open")} />
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
     </div>
+  )
+}
+
+function ActionBtn({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: "transparent",
+        color,
+        border: `1px solid ${color}`,
+        padding: "2px 8px",
+        borderRadius: 4,
+        fontSize: 11,
+        cursor: "pointer",
+      }}
+    >{label}</button>
   )
 }
 

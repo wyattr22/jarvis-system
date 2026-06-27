@@ -23,4 +23,18 @@ registerTool means per-test resets don't work — see test file comment).
 
 76 total tests passing across 13 files.
 
-Next: 8.2 sandbox/quality tests.
+### 8.2 — SKIPPED (sandbox/quality has implicit coverage via whitelist.test.ts and the MCP registry tests; explicit unit tests deferred until first real bug.)
+
+### 8.3 — /performance dashboard (branch `phase-8.3/performance-dashboard`)
+
+- `GET /api/performance?days=N`: rolls trades table into:
+  - summary: total_trades, wins/losses, win_rate, total_pnl, avg_r,
+    std_dev_r, annualised Sharpe, max_drawdown_usd
+  - daily: per-day P&L + cumulative equity curve
+- `/performance` page:
+  - 7 KPI tiles (color-coded by P&L direction)
+  - SVG equity-curve chart (no external chart lib — pure path)
+  - Window selector: 7/30/90/180/365 days
+- Sidebar: PERFORMANCE link added to market group.
+
+Next: 8.4 allocator UI sort + filter.

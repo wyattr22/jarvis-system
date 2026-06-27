@@ -38,4 +38,19 @@ Tool-calling from voice mid-response (e.g. Jarvis dynamically calling
 `allocator.execute(id)`) is a bigger refactor — deferred to a Phase 6
 ticket since the LLM router would need MCP-aware tool-use schema.
 
-Next: 5.3 Observer reads opportunities.
+### 5.3 — Council sees opportunities feed (branch `phase-5.3/observer-opportunities`)
+
+Built `src/lib/agents/opportunities-context.ts` exporting
+`getOpportunitiesForCouncil()` which returns:
+- `total_open` count
+- `by_source` + `by_asset_class` distribution
+- `top` — 5 highest-confidence ranked opportunities with full details
+
+Wired into `runFullCouncilCycle()` orchestrator after the Observer step.
+Snapshot logged to audit_log under `opportunities_snapshot` so we can
+correlate council outcomes with the opportunity-feed state at decision time.
+
+The Researcher + Critics don't change shape yet — that's a Phase 6 ticket
+when we let proposals reference cross-project opportunity patterns.
+
+Next: 5.4 opportunity expiry cron.

@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 5.2 — voice page nav for opportunities/allocator/sources (branch `phase-5.2/voice-intent-opportunities`)
+**Active step:** 5.3 — Observer/Council see opportunities (branch `phase-5.3/observer-opportunities`)
 
 ## What just landed (autonomous Costco-run session, 2026-06-27)
 

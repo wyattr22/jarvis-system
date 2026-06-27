@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client"
 import { runObserver } from "./observer"
 import { runResearcher } from "./researcher"
+import { getOpportunitiesForCouncil } from "./opportunities-context"
 import { runCriticEnsemble } from "./critic"
 import { runRiskManager } from "./risk-manager"
 import { runMetaAgent } from "./meta-agent"
@@ -26,6 +27,19 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
   const patterns = await runObserver()
   if (patterns.length === 0) {
     await auditLog("orchestrator", "council_cycle_brainstorm_mode", { strategyId })
+  }
+
+  // Cross-project opportunities snapshot for the council's awareness.
+  // Logged into audit_log so we can correlate council outcomes with the
+  // opportunity feed state at decision time.
+  const oppsCtx = await getOpportunitiesForCouncil().catch(() => null)
+  if (oppsCtx) {
+    await auditLog("orchestrator", "opportunities_snapshot", {
+      total_open: oppsCtx.total_open,
+      by_source: oppsCtx.by_source,
+      by_asset_class: oppsCtx.by_asset_class,
+      top_count: oppsCtx.top.length,
+    })
   }
 
   // Step 2: Researcher drafts proposal

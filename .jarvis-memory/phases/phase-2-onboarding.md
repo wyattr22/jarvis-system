@@ -58,4 +58,15 @@ curl -X POST https://jarvis-system-flame.vercel.app/api/opportunities/ingest \
 
 Returns: `{ ok: true, id: "opp_…", dedup: false, client: "mcp_…" }`
 
-Next: 2.3 read-side (`GET /api/opportunities` + dashboard page).
+### 2.3 — Opportunities dashboard (branch `phase-2.3/opportunities-dashboard`)
+
+- `GET /api/opportunities` — read-only, no auth. Filters: source, status,
+  asset_class, instrument, limit.
+- `/opportunities` page — full table with source + status filter pills,
+  20s auto-refresh, color-coded source/status badges, tabular numerics,
+  expected R / win% / horizon / entry / stop / confidence / age columns.
+- Sidebar: added OPPORTUNITIES link to the EXECUTION group.
+
+Read-only first; approve/reject/mute actions land in 2.8.
+
+Next: 2.4 splitwatch host whitelist + `splitwatch.list_opportunities` MCP tool.

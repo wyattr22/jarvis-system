@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 2.1 — opportunities store (branch `phase-2.1/opportunities-store`)
+**Active step:** 2.2 — ingest endpoint (branch `phase-2.2/opportunities-ingest`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

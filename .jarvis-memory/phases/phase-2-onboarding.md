@@ -29,4 +29,33 @@ Created `src/lib/opportunities/store.ts` with:
 Tests in `src/lib/opportunities/store.test.ts` cover the `OpportunityInput`
 shape. DB-backed flows are covered in Phase 4 integration tests.
 
-Next: 2.2 wraps `ingestOpportunity` in a POST endpoint with bearer auth.
+### 2.2 — Ingest endpoint (branch `phase-2.2/opportunities-ingest`)
+
+`POST /api/opportunities/ingest` accepts an OpportunityInput, validated by
+a zod schema. Auth = bearer token via `authenticateRequest`, requires
+`write:opportunities` scope (or CRON_SECRET wildcard).
+
+Sample push from splitwatch (after they register a token):
+```bash
+curl -X POST https://jarvis-system-flame.vercel.app/api/opportunities/ingest \
+  -H "Authorization: Bearer $SPLITWATCH_JARVIS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "splitwatch",
+    "asset_class": "equity",
+    "instrument": "ATHE",
+    "side": "long",
+    "thesis": "Reverse split 1:5 effective 2026-07-01; fractional rounding-up arbitrage",
+    "expected_r": 1.2,
+    "win_prob": 0.45,
+    "horizon_days": 3,
+    "entry_hint": 4.20,
+    "stop_hint": 3.95,
+    "expires_at": 1782800000000,
+    "source_payload": {"cik": "0001234", "ratio": "1:5"}
+  }'
+```
+
+Returns: `{ ok: true, id: "opp_…", dedup: false, client: "mcp_…" }`
+
+Next: 2.3 read-side (`GET /api/opportunities` + dashboard page).

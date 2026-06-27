@@ -49,4 +49,24 @@ API:
 
 12 unit tests in `src/lib/allocator/sizer.test.ts` covering math + edges.
 
-Next: 4.3 portfolio scorer.
+### 4.3 — Portfolio scorer (branch `phase-4.3/scorer`)
+
+`src/lib/allocator/scorer.ts` exports `buildPlan(opps, positions, equity, config)`
+returning `AllocatorPlan { equity, rows[], approved_count, total_dollar_at_risk }`.
+
+Scoring: `expected_r × win_prob × confidence` (missing values default to 1/0.5/0.5
+respectively). Higher scores get capacity first.
+
+Filters applied per-row in priority order:
+- missing entry/stop → `missing_data`
+- sizer returns zero → `size_zero`
+- `max_open_positions` reached → `risk_blocked`
+- already holding instrument → `risk_blocked`
+- asset class % cap exceeded → `risk_blocked`
+
+6 unit tests in `src/lib/allocator/scorer.test.ts` covering rank order, all
+three cap types, and the running totals.
+
+45 total tests passing.
+
+Next: 4.4 dry-run endpoint.

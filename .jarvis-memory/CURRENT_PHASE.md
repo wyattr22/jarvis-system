@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 7.2 — push notifications (branch `phase-7.2/push-notifications`)
+**Active step:** 7.4 — source correlation (branch `phase-7.4/source-correlation`)
 
-Phase 6 done (10/11). Phase 7 in flight. 40 PRs in stack so far.
+Phase 6 done. Phase 7 in flight. 42+ PRs stacked.
 
 ## What's done
 

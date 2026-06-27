@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.9 — news → opportunities (branch `phase-6.9/news-opportunities`)
+**Active step:** 6.11 — expanded test coverage (branch `phase-6.11/expanded-test-coverage`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

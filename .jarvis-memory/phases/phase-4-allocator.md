@@ -93,9 +93,28 @@ curl -X POST $URL/api/allocator/run \
   Kelly fraction, status badge, and block reason.
 - Sidebar: added ALLOCATOR link to EXECUTION group.
 
-Approve / execute lands in a follow-up (was originally 4.6 + 4.7 — kept
-manual until user is back to set risk tolerance).
+### 4.6 — Allocator execute endpoint (branch `phase-4.6/allocator-execute`)
 
-Next: Phase 4 polish or pause for review. /allocator now renders the plan
-end-to-end. Phase 5 (voice/council see opportunities) requires more
-co-ordination — best to pause before it.
+- `src/lib/allocator/allocations.ts`: `allocations` table + recordAllocation /
+  listAllocations helpers. Tracks every execution attempt for audit.
+- `src/app/api/allocator/execute/route.ts`:
+  - POST with CRON_SECRET (the dangerous endpoint)
+  - Body: `{ approved_ids: string[], decided_by?: "user"|"auto"|"council" }`
+  - Rebuilds the plan against LIVE state before executing — any opportunity
+    no longer approved gets skipped (risk caps may have shifted)
+  - Dispatches through the right BrokerAdapter (`getAdapter(opp.asset_class)`)
+  - Uses `client_order_id = "opp_<id>"` for broker-side idempotency
+  - On success: marks opportunity `executed`, records `allocations` row,
+    audit_log entry
+  - Returns per-id results
+- 50-id batch cap so a single call can't drown the broker
+
+Verification (against paper account):
+```
+curl -X POST $URL/api/allocator/execute \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -d '{"approved_ids":["opp_xxx_yyy"]}'
+# → { ok, requested, executed, skipped, errored, results: [...] }
+```
+
+Next: 4.7 Risk Manager veto.

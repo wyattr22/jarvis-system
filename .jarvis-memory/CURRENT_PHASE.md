@@ -1,6 +1,6 @@
 # Current Phase
 
-**Paused — awaiting user review of PRs 1-23.**
+**Active step:** 4.6 — allocator execute endpoint (branch `phase-4.6/allocator-execute`)
 
 ## What just landed (autonomous Costco-run session, 2026-06-27)
 

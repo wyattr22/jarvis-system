@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.4 — /risk-config dashboard (branch `phase-6.4/risk-config-dashboard`)
+**Active step:** 6.5 — /mcp-clients dashboard (branch `phase-6.5/mcp-clients-dashboard`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

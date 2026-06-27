@@ -53,4 +53,16 @@ into the UI — never stored client-side). Also exposes "Reset to Defaults".
 
 Sidebar: RISK CONFIG link added.
 
-Next: 6.5 /mcp-clients dashboard.
+### 6.5 — /mcp-clients dashboard (branch `phase-6.5/mcp-clients-dashboard`)
+
+`/mcp-clients` page — view registered clients with name/scopes/created/
+last-seen, register new clients with a scope picker (checkboxes for each
+known scope), and revoke clients with a confirm prompt.
+
+When a new client is created the plaintext token is shown ONCE in a
+highlighted box with an "I saved it" button. Saving requires CRON_SECRET
+pasted into the UI; never stored client-side.
+
+Sidebar: MCP CLIENTS link added.
+
+Next: 6.6 allocation outcome tracker.

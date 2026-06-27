@@ -21,6 +21,7 @@ const NAV = [
   { href: "/allocations",   label: "ALLOCATIONS",   group: "execution" },
   { href: "/risk-config",   label: "RISK CONFIG",   group: "execution" },
   { href: "/mcp-clients",   label: "MCP CLIENTS",   group: "execution" },
+  { href: "/system-status", label: "STATUS",        group: "execution" },
   { href: "/proposals",     label: "PROPOSALS",     group: "council" },
   { href: "/experiments",   label: "EXPERIMENTS",   group: "council" },
   { href: "/council",       label: "COUNCIL",       group: "council" },

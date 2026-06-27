@@ -35,6 +35,10 @@
     {
       "path": "/api/sync/allocation-outcomes",
       "schedule": "*/30 13-21 * * 1-5"
+    },
+    {
+      "path": "/api/sync/drawdown-check",
+      "schedule": "*/15 13-21 * * 1-5"
     }
   ]
 }

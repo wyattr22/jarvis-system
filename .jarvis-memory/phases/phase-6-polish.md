@@ -74,4 +74,16 @@ Audits every state change.
 
 `vercel.json`: cron `*/30 13-21 * * 1-5` (every 30min during market hours).
 
-Next: 6.7 position drawdown monitor.
+### 6.7 — Drawdown monitor (branch `phase-6.7/drawdown-monitor`)
+
+- `src/lib/learning/drawdown-monitor.ts` — pure `computeDrawdowns(positions, config)`:
+  - warn at -3% drawdown, danger at -6% (configurable)
+  - sorts most-underwater first
+- `src/lib/learning/drawdown-monitor.test.ts` — 7 unit tests (57 total passing)
+- `GET /api/sync/drawdown-check` (CRON_SECRET): pulls positions, computes
+  alerts, logs each to audit_log as `drawdown_warn` or `drawdown_danger`
+- Cron: `*/15 13-21 * * 1-5` (every 15min during market hours)
+
+Future: push-notification on danger via `web-push` (key infra already in env vars).
+
+Next: 6.8 cross-repo PR script.

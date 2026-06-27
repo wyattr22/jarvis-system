@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 4.7 — Risk Manager veto (branch `phase-4.7/risk-manager-veto`)
+**Active step:** 5.1 — voice context injects opportunities (branch `phase-5.1/voice-opportunities`)
 
 ## What just landed (autonomous Costco-run session, 2026-06-27)
 

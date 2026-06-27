@@ -1,0 +1,25 @@
+# Phase 5 — Voice + Council See Everything
+
+## Goal
+
+Jarvis's voice route + Council agents reason over the unified opportunities
+feed, not just legacy signals. When asked "what's the best opportunity right
+now" he answers from the feed; when the council runs, the Observer ingests
+opportunities alongside trades.
+
+## Step log
+
+### 5.1 — Voice context injects opportunities (branch `phase-5.1/voice-opportunities`)
+
+`src/lib/learning/opportunities-summary.ts` exports `getOpportunitiesContextLine()`:
+- Pulls last 50 open opportunities
+- Filters to confidence ≥ 0.5
+- Ranks by `expected_r × win_prob × confidence`
+- Returns top 3 as a single context line:
+  `OPEN OPPORTUNITIES (12 total, top 3 by score): splitwatch:ATHE long expR=1.2 win=45% score=0.27 | swing:TSLA long expR=2.5 win=55% score=0.79 | ...`
+
+Wired into `src/app/api/voice/route.ts` Promise.all alongside the existing
+context/memories/research/setupStats fetches, then injected into the system
+prompt (skipped for casual / navOnly modes to keep them cheap).
+
+Next: 5.2 voice intent mapping.

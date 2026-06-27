@@ -16,6 +16,7 @@ import { listOpportunities, updateOpportunityStatus } from "@/lib/opportunities/
 import { getAdapter } from "@/lib/brokers"
 import { recordAllocation } from "@/lib/allocator/allocations"
 import { auditLog } from "@/lib/guardrails/audit"
+import { vetoAllocatorPlan } from "@/lib/agents/risk-manager"
 
 export const maxDuration = 60
 
@@ -54,7 +55,31 @@ export async function POST(req: Request) {
   try { positions = await equityAdapter.positions() } catch { /* empty */ }
 
   const plan = buildPlan(opps, positions, equity, config)
-  const approvedRowMap = new Map(plan.rows.filter(r => r.status === "approved").map(r => [r.opportunity.id, r]))
+
+  // Risk Manager veto on the whole plan + per-opportunity
+  let todayPnl = 0
+  try {
+    const acct = await equityAdapter.account()
+    todayPnl = acct.day_pnl
+  } catch { /* default 0 */ }
+  const veto = vetoAllocatorPlan(plan, config, todayPnl)
+  if (veto.verdict === "veto") {
+    await auditLog("allocator", "plan_vetoed", { reason: veto.reason, warnings: veto.warnings })
+    return Response.json({
+      ok: false,
+      vetoed: true,
+      reason: veto.reason,
+      warnings: veto.warnings,
+    }, { status: 403 })
+  }
+
+  const perOppAllow = new Map(veto.per_opportunity.map(p => [p.opportunity_id, p]))
+  const approvedRowMap = new Map(
+    plan.rows
+      .filter(r => r.status === "approved")
+      .filter(r => perOppAllow.get(r.opportunity.id)?.allow === true)
+      .map(r => [r.opportunity.id, r]),
+  )
 
   const results: Array<{
     opportunity_id: string

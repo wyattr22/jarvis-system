@@ -117,4 +117,24 @@ curl -X POST $URL/api/allocator/execute \
 # → { ok, requested, executed, skipped, errored, results: [...] }
 ```
 
-Next: 4.7 Risk Manager veto.
+### 4.7 — Risk Manager veto on allocator plans (branch `phase-4.7/risk-manager-veto`)
+
+Added `vetoAllocatorPlan(plan, config, todayPnl)` to `src/lib/agents/risk-manager.ts`
+as a sibling to the existing proposal veto. Pure function — no LLM, no DB —
+runs synchronously inside the execute path.
+
+Veto logic:
+- Hard veto if today's realised P&L already ≤ `equity × -max_daily_loss_pct`
+- Hard veto if plan worst-case (today's P&L − total $ at risk) would breach the cap
+- Per-opportunity block if individual `risk_pct_of_equity` > `LIMITS.MAX_RISK_PER_TRADE_PCT` (3% hard cap)
+- Soft warnings (don't block) when:
+  - Plan would open > half of `max_open_positions`
+  - Plan $ at risk > 75% of daily loss cap
+
+Wired into `/api/allocator/execute`: veto runs after `buildPlan`, before any
+order placement. Whole-plan veto → 403. Per-opp blocks remove rows from the
+execution batch.
+
+5 unit tests in `src/lib/agents/risk-manager.test.ts` (50 total passing).
+
+Phase 4 complete. Phase 5 (voice/council see opportunities) starts next.

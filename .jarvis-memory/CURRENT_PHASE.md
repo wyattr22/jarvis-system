@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 4.6 — allocator execute endpoint (branch `phase-4.6/allocator-execute`)
+**Active step:** 4.7 — Risk Manager veto (branch `phase-4.7/risk-manager-veto`)
 
 ## What just landed (autonomous Costco-run session, 2026-06-27)
 

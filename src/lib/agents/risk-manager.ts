@@ -3,6 +3,8 @@ import { route } from "@/lib/llm/router"
 import { LIMITS } from "@/lib/guardrails/limits"
 import { getCorrelationMatrix } from "@/lib/validation/correlation"
 import { parseAndValidate, RiskOutputSchema, type RiskOutput, type ProposalOutput } from "./schema"
+import type { AllocatorPlan } from "@/lib/allocator/scorer"
+import type { RiskConfig } from "@/lib/allocator/risk-config"
 
 export async function runRiskManager(
   proposal: ProposalOutput,
@@ -84,5 +86,98 @@ Output JSON: { "verdict": "approve"|"veto", "reason": string, "risk_factors": st
     risk_factors: ["parse_failure"],
     correlation_concern: false,
     regime_concentration: false,
+  }
+}
+
+// ── Allocator plan veto ───────────────────────────────────────
+//
+// Sibling function to runRiskManager but operates on an AllocatorPlan from
+// the Phase 4 allocator. Returns per-opportunity verdicts + a plan-level
+// summary. Soft-vetoes (warnings) for things the scorer already filtered,
+// hard-vetoes for global plan violations (e.g. daily loss cap).
+//
+// Pure function. Doesn't call an LLM. Fast — runs synchronously inside the
+// allocator execute path before any orders are placed.
+
+export type PlanVetoResult = {
+  verdict: "approve" | "veto" | "approve_with_warnings"
+  reason: string
+  per_opportunity: Array<{
+    opportunity_id: string
+    allow: boolean
+    reason?: string
+  }>
+  warnings: string[]
+}
+
+export function vetoAllocatorPlan(
+  plan: AllocatorPlan,
+  config: RiskConfig,
+  todayPnl: number,  // current realised day-to-date P&L (negative = loss)
+): PlanVetoResult {
+  const warnings: string[] = []
+  const perOpp: PlanVetoResult["per_opportunity"] = []
+  let hardVeto = false
+  let hardReason = ""
+
+  // Hard cap: if today's loss already at or beyond max_daily_loss_pct, veto all.
+  const dailyLossLimit = -1 * plan.equity * config.max_daily_loss_pct
+  if (todayPnl <= dailyLossLimit) {
+    hardVeto = true
+    hardReason = `daily loss ${todayPnl.toFixed(0)} hit cap of ${dailyLossLimit.toFixed(0)} (${(config.max_daily_loss_pct * 100).toFixed(1)}%)`
+  }
+
+  // Hard cap: plan total $ at risk would push daily loss over the cap.
+  // Assume worst case = all approved rows hit stop.
+  const projectedWorstCase = todayPnl - plan.total_dollar_at_risk
+  if (projectedWorstCase < dailyLossLimit && !hardVeto) {
+    hardVeto = true
+    hardReason = `plan worst-case (all stops hit) would exceed daily loss cap: projected ${projectedWorstCase.toFixed(0)} vs cap ${dailyLossLimit.toFixed(0)}`
+  }
+
+  // Per-opportunity: check that each individual row's risk_pct_of_equity
+  // respects the hardcoded LIMITS as well as the configured cap.
+  for (const row of plan.rows) {
+    if (row.status !== "approved") {
+      perOpp.push({ opportunity_id: row.opportunity.id, allow: false, reason: row.block_reason ?? row.status })
+      continue
+    }
+    if (hardVeto) {
+      perOpp.push({ opportunity_id: row.opportunity.id, allow: false, reason: hardReason })
+      continue
+    }
+    if (row.sizing.risk_pct_of_equity > LIMITS.MAX_RISK_PER_TRADE_PCT) {
+      perOpp.push({
+        opportunity_id: row.opportunity.id,
+        allow: false,
+        reason: `risk ${(row.sizing.risk_pct_of_equity * 100).toFixed(2)}% exceeds hard cap ${(LIMITS.MAX_RISK_PER_TRADE_PCT * 100).toFixed(0)}%`,
+      })
+      continue
+    }
+    perOpp.push({ opportunity_id: row.opportunity.id, allow: true })
+  }
+
+  if (hardVeto) {
+    return {
+      verdict: "veto",
+      reason: hardReason,
+      per_opportunity: perOpp,
+      warnings,
+    }
+  }
+
+  // Soft warnings (don't block, but surface for the council/UI)
+  if (plan.approved_count > config.max_open_positions / 2) {
+    warnings.push(`plan would open ${plan.approved_count} positions (more than half of max_open_positions=${config.max_open_positions})`)
+  }
+  if (plan.total_dollar_at_risk > plan.equity * config.max_daily_loss_pct * 0.75) {
+    warnings.push(`plan $ at risk ${plan.total_dollar_at_risk.toFixed(0)} is >75% of daily-loss cap`)
+  }
+
+  return {
+    verdict: warnings.length > 0 ? "approve_with_warnings" : "approve",
+    reason: warnings.length > 0 ? "approved with risk warnings (see warnings list)" : "all checks passed",
+    per_opportunity: perOpp,
+    warnings,
   }
 }

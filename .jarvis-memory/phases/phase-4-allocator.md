@@ -69,4 +69,17 @@ three cap types, and the running totals.
 
 45 total tests passing.
 
-Next: 4.4 dry-run endpoint.
+### 4.4 — Allocator dry-run endpoint (branch `phase-4.4/allocator-dryrun`)
+
+`POST /api/allocator/run` (CRON_SECRET-protected). Reads open opportunities,
+live positions + equity from AlpacaAdapter, current risk_config, and returns
+the AllocatorPlan. Does NOT execute anything — that lands in 4.6.
+
+Verification after deploy:
+```
+curl -X POST $URL/api/allocator/run \
+  -H "Authorization: Bearer $CRON_SECRET"
+# → { ok: true, generated_at, plan: { equity, rows[], approved_count, total_dollar_at_risk } }
+```
+
+Next: 4.5 /allocator dashboard page.

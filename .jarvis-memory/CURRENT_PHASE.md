@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.2 — opportunities MCP tools (branch `phase-6.2/opportunities-mcp-tools`)
+**Active step:** 6.3 — /allocations dashboard (branch `phase-6.3/allocations-dashboard`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

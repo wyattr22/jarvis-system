@@ -37,4 +37,11 @@ splitwatch/swing tools):
 
 17 total MCP tools registered now.
 
-Next: 6.3 /allocations dashboard.
+### 6.3 — /allocations dashboard (branch `phase-6.3/allocations-dashboard`)
+
+- `GET /api/allocations?limit=N` — list execution history
+- `/allocations` page renders the audit table: when, opportunity_id, broker,
+  order_id, $ allocated, risk %, decided_by, status badge, error column
+- Sidebar: ALLOCATIONS link added (next to ALLOCATOR)
+
+Next: 6.4 /risk-config dashboard.

@@ -12,6 +12,7 @@ import { authenticateRequest } from "@/lib/mcp/auth"
 // Add new tool files here as they land.
 import "@/lib/mcp/tools/jarvis"
 import "@/lib/mcp/tools/splitwatch"
+import "@/lib/mcp/tools/swing"
 
 export const maxDuration = 60
 

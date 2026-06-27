@@ -43,6 +43,10 @@
     {
       "path": "/api/sync/news-scan",
       "schedule": "0 12,16,20 * * 1-5"
+    },
+    {
+      "path": "/api/sync/time-stops",
+      "schedule": "0 21 * * 1-5"
     }
   ]
 }

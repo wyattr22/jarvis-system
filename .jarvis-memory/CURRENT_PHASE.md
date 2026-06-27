@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 8.3 — /performance dashboard (branch `phase-8.3/performance-dashboard`)
+**Active step:** 8.5 — time-stop monitor (branch `phase-8.5/time-stop-monitor`)
 
-Phase 8 in flight (8.2 skipped — sandbox has implicit coverage). 44+ PRs.
+Phase 8 in flight. 45+ PRs stacked.
 
 ## What's done
 

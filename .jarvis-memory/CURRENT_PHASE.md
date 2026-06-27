@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 8.5 — time-stop monitor (branch `phase-8.5/time-stop-monitor`)
+**Active step:** 8.6 — performance MCP tool (branch `phase-8.6/performance-mcp-tool`)
 
-Phase 8 in flight. 45+ PRs stacked.
+Phase 8 nearly done. 47+ PRs stacked. 18 MCP tools registered.
 
 ## What's done
 

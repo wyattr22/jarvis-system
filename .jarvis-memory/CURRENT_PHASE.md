@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.8 — cross-repo onboard script (branch `phase-6.8/cross-repo-script`)
+**Active step:** 6.9 — news → opportunities (branch `phase-6.9/news-opportunities`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

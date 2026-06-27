@@ -99,4 +99,16 @@ export CRON_SECRET='j4rv1s-cr0n-s3cr3t-2026'
 ./scripts/onboard-external-project.sh /Users/wyattrantz/splitwatch splitwatch
 ```
 
-Next: 6.9 news → opportunities pipeline.
+### 6.9 — News → low-confidence opportunities (branch `phase-6.9/news-opportunities`)
+
+- `src/lib/learning/news-to-opportunities.ts`: `ingestNewsItems(items)`
+  converts ticker-tagged RSS items into opportunities with `source='news'`,
+  `confidence=0.2` (intentionally below the 0.5 model gate), 24h expiry
+- `GET /api/sync/news-scan` (CRON_SECRET): fetches RSS, ingests
+- Cron: `0 12,16,20 * * 1-5` (pre-open, mid-day, post-close on weekdays)
+
+The 0.2 confidence floor means news opportunities NEVER enter LLM context
+or the council's reasoning — they show up at /opportunities for visibility
+only. User can manually approve one if they want to act on it.
+
+Next: 6.10 voice tool-use.

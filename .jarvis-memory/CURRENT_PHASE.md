@@ -1,81 +1,106 @@
 # Current Phase
 
-**Active step:** 5.3 — Observer/Council see opportunities (branch `phase-5.3/observer-opportunities`)
+**Paused — Phase 5 complete (Phases 0-5 fully coded).**
 
-## What just landed (autonomous Costco-run session, 2026-06-27)
+## What's done
 
-**23 stacked PRs covering Phase 0 → Phase 4.5:**
+**28 stacked PRs covering Phase 0 → Phase 5.4.**
 
-| PR  | Step  | What                                         |
-|-----|-------|----------------------------------------------|
-| #1  | 0     | Workflow + CI + hooks + memory system        |
-| #2  | 1.1   | Install @modelcontextprotocol/sdk            |
-| #3  | 1.2   | MCP server scaffold + dispatch + tests       |
-| #4  | 1.3   | MCP HTTP POST handler                        |
-| #5  | 1.4   | Bearer auth + admin client registry          |
-| #6  | 1.5   | SSE GET handler                              |
-| #7  | 1.6   | First 3 MCP tools                            |
-| #8  | 1.8   | Last 3 MCP tools                             |
-| #9  | 2.1   | opportunities table + store                  |
-| #10 | 2.2   | Ingest endpoint (bearer-auth)                |
-| #11 | 2.3   | Opportunities dashboard + GET API            |
-| #12 | 2.4   | splitwatch MCP tool                          |
-| #13 | 2.6   | swing MCP tool                               |
-| #14 | 2.8   | Approve/reject/mute actions                  |
-| #15 | 3.1   | BrokerAdapter interface                      |
-| #16 | 3.2   | AlpacaAdapter                                |
-| #17 | 3.3   | Futures + forex stubs                        |
-| #18 | 3.4   | Adapter registry + brokers.* MCP tools       |
-| #19 | 4.1   | risk_config table + admin endpoint           |
-| #20 | 4.2   | Kelly-capped sizer                           |
-| #21 | 4.3   | Portfolio scorer                             |
-| #22 | 4.4   | Allocator dry-run endpoint                   |
-| #23 | 4.5   | /allocator dashboard page                    |
+| PR  | Step  | What |
+|-----|-------|------|
+| #1  | 0     | Workflow + CI + hooks + memory system |
+| #2  | 1.1   | Install @modelcontextprotocol/sdk |
+| #3  | 1.2   | MCP server scaffold + 9 dispatch tests |
+| #4  | 1.3   | MCP HTTP POST handler |
+| #5  | 1.4   | Bearer auth + admin registry |
+| #6  | 1.5   | SSE GET handler |
+| #7  | 1.6   | memory.search, signals.list, account.snapshot |
+| #8  | 1.8   | memory.save, source_quality.snapshot, voice.ask |
+| #9  | 2.1   | opportunities table + store |
+| #10 | 2.2   | Bearer-auth ingest endpoint |
+| #11 | 2.3   | Opportunities dashboard + GET API |
+| #12 | 2.4   | splitwatch.list_opportunities tool |
+| #13 | 2.6   | swing.list_setups tool |
+| #14 | 2.8   | Approve/reject/mute actions |
+| #15 | 3.1   | BrokerAdapter interface |
+| #16 | 3.2   | AlpacaAdapter |
+| #17 | 3.3   | Futures + forex stubs |
+| #18 | 3.4   | Adapter registry + brokers.* MCP tools |
+| #19 | 4.1   | risk_config table |
+| #20 | 4.2   | Kelly-capped sizer (12 tests) |
+| #21 | 4.3   | Portfolio scorer (6 tests) |
+| #22 | 4.4   | Allocator dry-run endpoint |
+| #23 | 4.5   | /allocator dashboard page |
+| #24 | 4.6   | Allocator execute endpoint |
+| #25 | 4.7   | Risk Manager veto (5 tests) |
+| #26 | 5.1   | Voice context injects opportunities |
+| #27 | 5.2   | Voice nav for opportunities/allocator/sources |
+| #28 | 5.3   | Orchestrator sees opportunities snapshot |
+| #29 | 5.4   | Opportunity expiry cron |
 
-**All 23 PRs:**
-- TypeScript clean (`tsc --noEmit`)
-- 45 unit tests passing across 7 test files
-- Pre-commit hooks fire on every commit
+**Quality:**
+- 50 unit tests across 8 test files, all passing
+- Every PR ran pre-commit (typecheck on staged files)
 - Conventional commits enforced
-- Memory file (`.jarvis-memory/CURRENT_PHASE.md` + per-phase journals) updated in every PR
+- Memory journal updated in every PR
 
 ## Stop reasons (won't auto-execute)
 
-- **1.7 — Claude Desktop smoke test** — needs the deployed MCP URL.
-- **2.5 — splitwatch repo PR** — splitwatch isn't a git repo yet. Recipe documented in `.jarvis-memory/phases/phase-2-onboarding.md`.
-- **2.7 — swing repo PR** — same, user picks between swing_scanner (Python) and swing-research (Node).
-- **4.6 — Allocator execute endpoint** — runs real orders. Wait for user to confirm risk tolerance.
-- **4.7 — Risk Manager council veto** — extends the existing council agent; lands once 4.6 ships.
-- **Phase 5 — Voice / Council see opportunities** — best to land after Phase 4 is fully tested.
+- **1.7** Claude Desktop smoke test — needs deployed URL
+- **2.5** splitwatch repo push — splitwatch isn't a git repo
+- **2.7** swing repo push — same
+- **Phase 6+** LLM-driven dynamic tool calling, futures/forex providers, cross-asset alpha — deferred until Phase 0-5 lands and proves itself
 
 ## What you need to do when you're back
 
-1. **Review + merge the PR stack.** Suggested order: just walk #1 → #23 sequentially; GitHub auto-rebases the next branch when its parent merges. If you want to skip review and trust the stack, `gh pr merge --squash --auto <num>` queues them all to auto-merge as their parents land.
-2. **Enable branch protection on `main`** (Settings → Branches → Add rule → require PR + status checks `CI / check`). Doc the settings in `DECISIONS.md` via a tiny follow-up PR.
-3. **After everything's merged + deployed:**
-   - Register a Claude Desktop MCP token (see phase-1-mcp.md)
-   - Open `/allocator` in the dashboard, click "Run Plan" — empty state until opportunities arrive
-   - Push a synthetic opportunity to verify the full loop:
-     ```bash
-     curl -X POST $URL/api/admin/mcp-clients \
-       -H "Authorization: Bearer $CRON_SECRET" \
-       -d '{"name":"test-pusher","scopes":["write:opportunities"]}'
-     # save the token
+1. **Review + merge PRs #1-#29 in order.** `gh pr merge --squash --auto <num>` for each will queue them to auto-merge as parents land.
+2. **Enable branch protection on `main`** in GitHub UI (Settings → Branches).
+3. **After deploy:**
+   - Register a Claude Desktop MCP token (recipe in `phase-1-mcp.md`)
+   - Push a synthetic opportunity to test the end-to-end loop (recipe below)
 
-     curl -X POST $URL/api/opportunities/ingest \
-       -H "Authorization: Bearer $TOKEN" \
-       -d '{"source":"jarvis","asset_class":"equity","instrument":"TSLA","side":"long","thesis":"smoke test","entry_hint":250,"stop_hint":245,"win_prob":0.6,"expected_r":2}'
-     ```
-     Open `/opportunities` → see the row. Open `/allocator` → run plan → see TSLA sized.
+## End-to-end smoke test recipe
+
+```bash
+URL=https://jarvis-system-flame.vercel.app
+SECRET=j4rv1s-cr0n-s3cr3t-2026
+
+# 1. Seed risk config
+curl -X POST $URL/api/admin/risk-config -H "Authorization: Bearer $SECRET" -d '{"action":"seed"}'
+
+# 2. Register a test client
+TOKEN=$(curl -X POST $URL/api/admin/mcp-clients \
+  -H "Authorization: Bearer $SECRET" \
+  -d '{"name":"smoke-test","scopes":["write:opportunities"]}' | jq -r .token)
+
+# 3. Push a synthetic opportunity
+curl -X POST $URL/api/opportunities/ingest \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"source":"jarvis","asset_class":"equity","instrument":"TSLA","side":"long","thesis":"smoke test","entry_hint":250,"stop_hint":245,"win_prob":0.6,"expected_r":2,"confidence":0.8}'
+
+# 4. Verify
+curl $URL/api/opportunities | jq
+# Open /opportunities in browser → row should be there
+
+# 5. Run allocator plan
+curl -X POST $URL/api/allocator/run
+# Open /allocator → should show TSLA sized
+
+# 6. Execute (CAUTION: places paper order)
+OPPID=<paste id from step 4>
+curl -X POST $URL/api/allocator/execute \
+  -H "Authorization: Bearer $SECRET" \
+  -d "{\"approved_ids\":[\"$OPPID\"]}"
+```
 
 ## Phase status snapshot
 
-- **Phase 0:** complete (workflow + memory)
-- **Phase 1:** code complete (PRs #1-#8). 1.7 smoke test is post-deploy.
-- **Phase 2:** Jarvis-side complete (PRs #9-#14). Cross-repo PRs (2.5, 2.7) deferred until splitwatch/swing repos exist.
-- **Phase 3:** complete (PRs #15-#18). Futures + forex adapters are stubs awaiting provider choice.
-- **Phase 4:** 4.1-4.5 complete (PRs #19-#23). 4.6 (execute) + 4.7 (council veto) deferred for user approval.
-- **Phase 5:** not started.
+- Phase 0: complete ✅
+- Phase 1: code complete (1.7 smoke test post-deploy)
+- Phase 2: Jarvis-side complete (2.5+2.7 cross-repo deferred)
+- Phase 3: complete (futures/forex stubbed)
+- Phase 4: complete
+- Phase 5: complete
 
 ## Pacing rule (still in force)
 

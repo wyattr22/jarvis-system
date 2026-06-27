@@ -53,4 +53,19 @@ correlate council outcomes with the opportunity-feed state at decision time.
 The Researcher + Critics don't change shape yet — that's a Phase 6 ticket
 when we let proposals reference cross-project opportunity patterns.
 
-Next: 5.4 opportunity expiry cron.
+### 5.4 — Opportunity expiry cron (branch `phase-5.4/opportunity-expiry`)
+
+- `GET /api/opportunities/expire` (CRON_SECRET-protected) calls
+  `expireOpportunities()` which marks any open row past `expires_at` as expired.
+- Added to `vercel.json` cron at `0 6 * * *` (6am UTC daily).
+
+Phase 5 complete. Jarvis sees opportunities in voice + council, can navigate
+to /opportunities + /allocator + /source-quality by voice, the orchestrator
+logs cross-project snapshots into audit_log, and stale opportunities expire
+automatically.
+
+Next:
+- Phase 0a.6 — enable branch protection on main (manual UI)
+- Phase 1.7 — Claude Desktop smoke test (post-deploy)
+- Phase 6 (not yet planned) — LLM-driven dynamic tool calling, real
+  futures/forex providers, cross-asset alpha

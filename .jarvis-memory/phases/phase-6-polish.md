@@ -86,4 +86,17 @@ Audits every state change.
 
 Future: push-notification on danger via `web-push` (key infra already in env vars).
 
-Next: 6.8 cross-repo PR script.
+### 6.8 — Cross-repo onboarding script (branch `phase-6.8/cross-repo-script`)
+
+`scripts/onboard-external-project.sh` automates 2.5/2.7 manual steps:
+1. git init + GitHub repo create + push (if not already)
+2. POSTs to /api/admin/mcp-clients to register the project
+3. Prints the env vars + curl example the user copies into the new project
+
+Usage:
+```bash
+export CRON_SECRET='j4rv1s-cr0n-s3cr3t-2026'
+./scripts/onboard-external-project.sh /Users/wyattrantz/splitwatch splitwatch
+```
+
+Next: 6.9 news → opportunities pipeline.

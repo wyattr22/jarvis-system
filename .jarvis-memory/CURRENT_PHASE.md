@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 7.4 — source correlation (branch `phase-7.4/source-correlation`)
+**Active step:** 8.1 — MCP tool registry tests (branch `phase-8.1/mcp-tool-tests`)
 
-Phase 6 done. Phase 7 in flight. 42+ PRs stacked.
+Phase 7 done. Phase 8 = test coverage + final polish. 43+ PRs stacked.
 
 ## What's done
 

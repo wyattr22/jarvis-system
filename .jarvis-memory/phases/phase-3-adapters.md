@@ -24,4 +24,16 @@ whether they're trading equities (Alpaca), futures (Tradier?), forex
 Pure types — no implementations yet. 3.2 wraps existing Alpaca code, 3.3
 stubs futures + forex, 3.4 builds the dispatch registry.
 
-Next: 3.2 AlpacaAdapter.
+### 3.2 — AlpacaAdapter (branch `phase-3.2/alpaca-adapter`)
+
+`src/lib/brokers/alpaca.ts` exports `AlpacaAdapter` (id='alpaca',
+assetClass='equity'). Wraps existing `getBars`/`getLatestQuote`/`getAccount`/
+`getPositions` for read paths. `place(order)` POSTs to `/v2/orders` directly
+(via `safeFetch`) supporting market+limit+bracket orders. `isOpen()` hits
+`/v2/clock`.
+
+Existing `/api/trade/route.ts` still works as-is — the adapter is additive.
+3.4 wires `getAdapter('equity')` to return AlpacaAdapter and refactors the
+trade route to dispatch through it.
+
+Next: 3.3 stub futures + forex adapters.

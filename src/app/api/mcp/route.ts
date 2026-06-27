@@ -13,6 +13,7 @@ import { authenticateRequest } from "@/lib/mcp/auth"
 import "@/lib/mcp/tools/jarvis"
 import "@/lib/mcp/tools/splitwatch"
 import "@/lib/mcp/tools/swing"
+import "@/lib/mcp/tools/brokers"
 
 export const maxDuration = 60
 

@@ -45,4 +45,23 @@ trade route to dispatch through it.
 - Both throw `notImplemented` on every method except `isOpen()` which returns
   false (so the registry can mark them unavailable).
 
-Next: 3.4 dispatch registry.
+### 3.4 — Adapter registry + brokers MCP tools (branch `phase-3.4/adapter-registry`)
+
+- `src/lib/brokers/index.ts`: `getAdapter(assetClass)` returns the configured
+  adapter, `listAdapters()` enumerates them. Registry currently:
+  - equity   → AlpacaAdapter
+  - crypto   → AlpacaAdapter (same broker)
+  - futures  → FuturesAdapterStub
+  - forex    → ForexAdapterStub
+  - options  → not configured (getAdapter throws)
+  - prediction → not configured
+- 6 unit tests in `src/lib/brokers/index.test.ts` (27 total now passing).
+- `src/lib/mcp/tools/brokers.ts` exposes:
+  - `brokers.list` — enumerate configured adapters
+  - `brokers.is_open` — market-hours check per asset class
+
+8 total MCP tools now registered: memory.search, memory.save, signals.list,
+account.snapshot, source_quality.snapshot, voice.ask, splitwatch.list_opportunities,
+swing.list_setups, brokers.list, brokers.is_open. (Actually 10. Counted.)
+
+Phase 3 complete. Next plan section: Phase 4 — risk-aware allocator.

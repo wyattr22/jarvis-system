@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 3.3 — stub adapters (branch `phase-3.3/stub-adapters`)
+**Active step:** 3.4 — adapter registry + brokers MCP tools (branch `phase-3.4/adapter-registry`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

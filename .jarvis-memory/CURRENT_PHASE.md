@@ -1,6 +1,8 @@
 # Current Phase
 
-**Paused — Phase 5 complete (Phases 0-5 fully coded).**
+**Active step:** 6.1 — allocator MCP tools (branch `phase-6.1/allocator-mcp-tools`)
+
+Phase 6 = polish + operability. Building autonomously through the day.
 
 ## What's done
 

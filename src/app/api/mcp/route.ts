@@ -14,6 +14,7 @@ import "@/lib/mcp/tools/jarvis"
 import "@/lib/mcp/tools/splitwatch"
 import "@/lib/mcp/tools/swing"
 import "@/lib/mcp/tools/brokers"
+import "@/lib/mcp/tools/allocator"
 
 export const maxDuration = 60
 

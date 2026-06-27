@@ -33,4 +33,20 @@ API:
 - `POST { action: "seed" }` (CRON_SECRET) — reset to defaults
 - `POST <patch>` (CRON_SECRET) — partial update
 
-Next: 4.2 Kelly-capped sizer.
+### 4.2 — Kelly-capped sizer (branch `phase-4.2/sizer`)
+
+`src/lib/allocator/sizer.ts` exports:
+
+- `kellyFraction(winProb, expectedR)` — pure Kelly criterion math, clipped
+  to [0, ∞). Returns 0 for negative-edge bets.
+- `sizeOpportunity(opp, equity, config)` — returns `SizingResult` with size,
+  dollar_amount, dollar_risk, kelly_fraction, risk_pct_of_equity.
+- Two caps applied; the smaller wins:
+  1. Risk cap: `equity × max_risk_per_trade_pct ÷ per_share_risk`
+  2. Kelly cap: `equity × kelly_fraction × kelly_fraction_cap ÷ entry`
+- Guard rails: rejects missing entry/stop, zero stop distance, non-positive
+  equity, computed-zero-size.
+
+12 unit tests in `src/lib/allocator/sizer.test.ts` covering math + edges.
+
+Next: 4.3 portfolio scorer.

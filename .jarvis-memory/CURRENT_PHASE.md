@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.1 — allocator MCP tools (branch `phase-6.1/allocator-mcp-tools`)
+**Active step:** 6.2 — opportunities MCP tools (branch `phase-6.2/opportunities-mcp-tools`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

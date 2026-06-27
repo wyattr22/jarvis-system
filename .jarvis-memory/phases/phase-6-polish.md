@@ -44,4 +44,13 @@ splitwatch/swing tools):
   order_id, $ allocated, risk %, decided_by, status badge, error column
 - Sidebar: ALLOCATIONS link added (next to ALLOCATOR)
 
-Next: 6.4 /risk-config dashboard.
+### 6.4 — /risk-config dashboard (branch `phase-6.4/risk-config-dashboard`)
+
+`/risk-config` page — editable form for every risk cap (per-trade %, daily
+loss %, max positions, correlated exposure, Kelly cap, asset class caps).
+Saves via POST to `/api/admin/risk-config` (requires CRON_SECRET pasted
+into the UI — never stored client-side). Also exposes "Reset to Defaults".
+
+Sidebar: RISK CONFIG link added.
+
+Next: 6.5 /mcp-clients dashboard.

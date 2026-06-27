@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.3 — /allocations dashboard (branch `phase-6.3/allocations-dashboard`)
+**Active step:** 6.4 — /risk-config dashboard (branch `phase-6.4/risk-config-dashboard`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

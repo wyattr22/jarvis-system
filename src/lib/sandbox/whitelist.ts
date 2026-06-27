@@ -34,6 +34,11 @@ const ALLOWED_HOSTS = new Set<string>([
   // HuggingFace model CDN (Transformers.js downloads model weights on first run)
   "huggingface.co",
   "cdn-lfs.huggingface.co",
+  // Internal projects pushing opportunities (will be Vercel-hosted, so the
+  // *.vercel.app wildcard already covers them — listing here for documentation).
+  // - splitwatch (production URL TBD; preview URLs covered by *.vercel.app wildcard)
+  // - swing_scanner (production URL TBD; same)
+
   // Display-only news RSS — feeds the /news page UI, NEVER enters predictive model
   // (the source quality gate will tag these as confidence=0 for any predictive use)
   "feeds.marketwatch.com",

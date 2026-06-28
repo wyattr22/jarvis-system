@@ -346,6 +346,9 @@ const PAGE_MAP: Record<string, string> = {
   features: '/features', feature: '/features',
   bot: '/bot', bots: '/bot', 'trading bot': '/bot',
   meta: '/meta-decisions', 'meta agent': '/meta-decisions', 'meta decisions': '/meta-decisions',
+  opportunities: '/opportunities', opportunity: '/opportunities', 'opp feed': '/opportunities',
+  allocator: '/allocator', allocate: '/allocator', allocation: '/allocator', 'risk plan': '/allocator',
+  sources: '/source-quality', 'source quality': '/source-quality', 'quality gate': '/source-quality',
 }
 
 // TF values must match the label field in charts/page.tsx TIMEFRAMES array

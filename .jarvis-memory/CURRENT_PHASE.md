@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 5.1 — voice context injects opportunities (branch `phase-5.1/voice-opportunities`)
+**Active step:** 5.2 — voice page nav for opportunities/allocator/sources (branch `phase-5.2/voice-intent-opportunities`)
 
 ## What just landed (autonomous Costco-run session, 2026-06-27)
 

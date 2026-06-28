@@ -16,7 +16,7 @@ import "@/lib/mcp/tools/swing"
 import "@/lib/mcp/tools/brokers"
 import "@/lib/mcp/tools/allocator"
 import "@/lib/mcp/tools/opportunities"
-import "@/lib/mcp/tools/allocator"
+import "@/lib/mcp/tools/performance"
 
 export const maxDuration = 60
 

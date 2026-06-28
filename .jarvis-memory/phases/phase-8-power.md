@@ -50,4 +50,12 @@ registerTool means per-test resets don't work — see test file comment).
   alert, fires a push notification per breach
 - Cron: `0 21 * * 1-5` (post-close on weekdays)
 
-Phase 8 complete (3/5 in-scope shipped; 8.2 + 8.4 deferred). 46+ PRs.
+### 8.6 — performance MCP tool (branch `phase-8.6/performance-mcp-tool`)
+
+`src/lib/mcp/tools/performance.ts` registers `performance.summary` (scope
+`read:account`) which returns the same window-rolled trade stats the
+/performance dashboard shows. Lets Claude clients ask "how have we been
+doing?" via chat. Registry test updated to expect 18 tools and verify
+the new name.
+
+Phase 8: 4/6 shipped (8.2 + 8.4 deferred as low-leverage polish). 47+ PRs total.

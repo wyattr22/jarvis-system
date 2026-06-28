@@ -18,6 +18,7 @@ beforeAll(async () => {
   await import("./brokers")
   await import("./allocator")
   await import("./opportunities")
+  await import("./performance")
 })
 
 const EXPECTED_TOOLS = [
@@ -33,6 +34,8 @@ const EXPECTED_TOOLS = [
   // opportunities
   "opportunities.list", "opportunities.top",
   "opportunities.update_status", "opportunities.ingest",
+  // performance
+  "performance.summary",
 ] as const
 
 describe("MCP tool catalog", () => {
@@ -44,8 +47,8 @@ describe("MCP tool catalog", () => {
     }
   })
 
-  it("has 17+ tools (catalog should keep growing, never shrinking)", async () => {
-    expect(listTools().length).toBeGreaterThanOrEqual(17)
+  it("has 18+ tools (catalog should keep growing, never shrinking)", async () => {
+    expect(listTools().length).toBeGreaterThanOrEqual(18)
   })
 
   it("every tool has a non-empty description", async () => {

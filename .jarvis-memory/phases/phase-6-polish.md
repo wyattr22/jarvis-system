@@ -111,4 +111,23 @@ The 0.2 confidence floor means news opportunities NEVER enter LLM context
 or the council's reasoning — they show up at /opportunities for visibility
 only. User can manually approve one if they want to act on it.
 
-Next: 6.10 voice tool-use.
+### 6.11 — Expanded test coverage (branch `phase-6.11/expanded-test-coverage`)
+
+Added 12 unit tests across 3 new files:
+
+- `src/lib/learning/news-to-opportunities.test.ts` — invariant: NEWS_CONFIDENCE_FLOOR < 0.5 (stays out of the LLM gate)
+- `src/lib/opportunities/dedup.test.ts` — 6 tests for the 24h window + 1% drift threshold math
+- `src/lib/allocator/risk-config.test.ts` — 4 tests verifying DEFAULT_RISK_CONFIG shape + ranges
+
+69 total tests across 12 files. All passing.
+
+### 6.10 — DEFERRED to Phase 7
+
+LLM-driven dynamic tool calling (Jarvis mid-response calling MCP tools)
+needs a careful prompt-engineering pass + LLM router that supports tool-use
+schema. Lifting to Phase 7 since it touches the voice route significantly
+and benefits from being designed alongside streaming response support.
+
+## Phase 6 status
+
+8 of 11 steps complete (6.10 deferred to Phase 7). 38 total PRs in stack.

@@ -36,4 +36,13 @@ Existing `/api/trade/route.ts` still works as-is — the adapter is additive.
 3.4 wires `getAdapter('equity')` to return AlpacaAdapter and refactors the
 trade route to dispatch through it.
 
-Next: 3.3 stub futures + forex adapters.
+### 3.3 — Stub futures + forex adapters (branch `phase-3.3/stub-adapters`)
+
+- `src/lib/brokers/futures.ts` — `FuturesAdapterStub` (assetClass='futures').
+  Provider candidates documented in source comment: Tradovate, Tradier, IBKR.
+- `src/lib/brokers/forex.ts` — `ForexAdapterStub` (assetClass='forex').
+  Recommended first: Oanda v20 practice API (free, no CC).
+- Both throw `notImplemented` on every method except `isOpen()` which returns
+  false (so the registry can mark them unavailable).
+
+Next: 3.4 dispatch registry.

@@ -47,6 +47,10 @@
     {
       "path": "/api/sync/time-stops",
       "schedule": "0 21 * * 1-5"
+    },
+    {
+      "path": "/api/sync/source-reliability",
+      "schedule": "0 22 * * *"
     }
   ]
 }

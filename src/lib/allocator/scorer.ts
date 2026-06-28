@@ -37,11 +37,14 @@ export type AllocatorPlan = {
   total_dollar_at_risk: number
 }
 
-function scoreOf(opp: Opportunity): number {
+// Optional per-source multiplier supplied from source_reliability table.
+// Defaults to 1.0 when reliability is unknown so existing tests don't shift.
+function scoreOf(opp: Opportunity, reliabilityByName?: Map<string, number>): number {
   const r   = opp.expected_r ?? 1.0
   const p   = opp.win_prob   ?? 0.5
   const c   = opp.confidence ?? 0.5
-  return r * p * c
+  const rel = reliabilityByName?.get(opp.source) ?? 1.0
+  return r * p * c * rel
 }
 
 export function buildPlan(
@@ -49,6 +52,8 @@ export function buildPlan(
   positions: Position[],
   equity: number,
   config: RiskConfig,
+  /** Optional per-source reliability multiplier (from source_reliability table). */
+  reliabilityByName?: Map<string, number>,
 ): AllocatorPlan {
   const heldSymbols = new Set(positions.map(p => p.symbol.toUpperCase()))
   const openCount   = positions.length
@@ -67,10 +72,12 @@ export function buildPlan(
   let projectedOpen = openCount
 
   // Sort by raw score descending so the strongest setups get capacity first
-  const sorted = [...opportunities].sort((a, b) => scoreOf(b) - scoreOf(a))
+  const sorted = [...opportunities].sort(
+    (a, b) => scoreOf(b, reliabilityByName) - scoreOf(a, reliabilityByName),
+  )
 
   const rows: PlanRow[] = sorted.map(opp => {
-    const score  = scoreOf(opp)
+    const score  = scoreOf(opp, reliabilityByName)
     const sizing = sizeOpportunity(opp, equity, config)
 
     if (!sizing.approved) {

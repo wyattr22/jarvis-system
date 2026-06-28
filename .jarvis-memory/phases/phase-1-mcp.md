@@ -46,3 +46,33 @@ curl -X POST https://jarvis-system-flame.vercel.app/api/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 Expected response: `{"jsonrpc":"2.0","id":1,"result":{"tools":[]}}`
+
+### 1.4 — MCP auth (branch `phase-1.4/mcp-auth`)
+
+Added bearer-token authentication on every `/api/mcp` request:
+
+- `src/lib/mcp/auth.ts`:
+  - `mcp_clients` table with SHA-256 hashed tokens + per-client JSON scopes
+  - `authenticateRequest(req)` extracts the Bearer header, hashes, looks up
+  - CRON_SECRET back door grants wildcard `*` scope (admin)
+  - `registerClient(name, scopes)` returns the plaintext token ONCE
+  - `listClients()` + `revokeClient(id)` for admin
+- `src/app/api/mcp/route.ts` now calls `authenticateRequest` before dispatch
+- `src/app/api/admin/mcp-clients/route.ts` — admin CRUD endpoint
+  (CRON_SECRET-protected) for client registration
+
+Smoke test after deploy (no token → 401):
+```
+curl -X POST <url>/api/mcp -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+# {"jsonrpc":"2.0","id":null,"error":{"code":-32001,"message":"missing bearer token"}}
+```
+
+Register first client:
+```
+curl -X POST <url>/api/admin/mcp-clients \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -d '{"name":"claude-code-local","scopes":["read:memory","read:signals","read:account"]}'
+# Returns: { id, token (shown ONCE), scopes }
+```
+
+Next: 1.5 SSE GET handler.

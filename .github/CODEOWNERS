@@ -1,0 +1,23 @@
+# CODEOWNERS — auto-request review when these paths change.
+# Format: <pattern> <@user-or-team>
+# Add team handles as collaborators join the project.
+
+# Default owner — required reviewer for all changes
+*                              @wyattr22
+
+# Plan + memory system — must stay consistent
+.jarvis-memory/                @wyattr22
+CLAUDE.md                      @wyattr22
+AGENTS.md                      @wyattr22
+
+# CI + workflow infrastructure
+.github/                       @wyattr22
+
+# Risk-critical surfaces — extra eyes when collaborators arrive
+src/lib/sandbox/               @wyattr22
+src/lib/brokers/               @wyattr22
+src/lib/allocator/             @wyattr22
+src/lib/mcp/                   @wyattr22
+src/app/api/trade/             @wyattr22
+src/app/api/opportunities/     @wyattr22
+src/app/api/mcp/               @wyattr22

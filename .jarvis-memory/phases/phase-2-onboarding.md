@@ -96,4 +96,29 @@ proxy tool (`splitwatch.get_filing`) can land in a follow-up PR.
 6. Add a `pushToJarvis()` helper in splitwatch's scan flow that POSTs to
    `/api/opportunities/ingest` for every detected split
 
-Next: 2.6 swing tool (same pattern).
+### 2.6 — swing tool (branch `phase-2.6/swing-tool`)
+
+`src/lib/mcp/tools/swing.ts` registers `swing.list_setups` (scope
+`read:opportunities`) — same pattern as splitwatch, filtered to
+`source='swing'`.
+
+There are two swing-related projects locally:
+- `/Users/wyattrantz/swing_scanner/` — Python script (swing_scanner.py)
+- `/Users/wyattrantz/swing-research/` — Node project with api/ and vercel.json
+
+For step 2.7 the user picks which one (or both) to wire up — same recipe
+as splitwatch:
+
+1. If not a git repo, init + create GitHub repo
+2. Deploy to Vercel (swing-research already has vercel.json — easier)
+3. Register the swing MCP client:
+   ```bash
+   curl -X POST https://jarvis-system-flame.vercel.app/api/admin/mcp-clients \
+     -H "Authorization: Bearer $CRON_SECRET" \
+     -d '{"name":"swing","scopes":["write:opportunities"]}'
+   ```
+4. Set JARVIS_INGEST_URL + JARVIS_INGEST_TOKEN env vars
+5. Add a push helper that POSTs detected setups to `/api/opportunities/ingest`
+   with `source: 'swing'`
+
+Next: 2.8 approve/reject/mute UI on the opportunities page.

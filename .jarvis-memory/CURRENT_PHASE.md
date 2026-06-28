@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 2.4 — splitwatch MCP tool (branch `phase-2.4/splitwatch-tool`)
+**Active step:** 2.6 — swing MCP tool (branch `phase-2.6/swing-tool`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

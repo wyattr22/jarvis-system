@@ -30,4 +30,23 @@ Wired existing `sendPushToAll` into:
 
 Both calls best-effort `.catch` so silent VAPID failures don't break crons/execution.
 
-Next: 7.3 README + onboarding doc.
+### 7.3 — README rewrite (branch `phase-7.3/readme-expansion`)
+
+Replaced create-next-app boilerplate with a proper project README:
+7-layer overview, quick start, env vars table, all 20 dashboard pages,
+all 11 cron jobs, MCP setup recipe, architecture, dev workflow, and
+phase shipped status.
+
+### 7.4 — Source correlation widget (branch `phase-7.4/source-correlation`)
+
+- `src/lib/learning/source-correlation.ts`:
+  - `getSourcePerformance(daysBack)` rolls allocations by source
+    (total executed / filled / rejected / avg $ allocated)
+  - `getInstrumentAgreement(daysBack)` finds instruments multiple sources
+    independently flagged in a 7d window — agreement = quality signal
+- `GET /api/source-performance?days=30&agreement_days=7` exposes both
+
+Council can later weight sources by their execution track record; UI
+chip showing cross-source agreement can land in a follow-up.
+
+Phase 7 progress: 4/4 in-scope steps complete. 43+ PRs in stack.

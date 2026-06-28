@@ -18,23 +18,24 @@ describe("registerTool + listTools", () => {
     expect(listTools().map(t => t.name)).toContain("echo")
   })
 
-  it("refuses duplicate registration", () => {
+  it("re-registration overwrites the previous entry (idempotent for hot reload)", async () => {
     registerTool({
       name: "x",
-      description: "",
+      description: "first",
       inputSchema: z.object({}),
       requiredScope: "read:any",
-      handler: async () => null,
+      handler: async () => "v1",
     })
-    expect(() =>
-      registerTool({
-        name: "x",
-        description: "",
-        inputSchema: z.object({}),
-        requiredScope: "read:any",
-        handler: async () => null,
-      })
-    ).toThrow(/already registered/)
+    registerTool({
+      name: "x",
+      description: "second",
+      inputSchema: z.object({}),
+      requiredScope: "read:any",
+      handler: async () => "v2",
+    })
+    const list = listTools()
+    expect(list.filter(t => t.name === "x")).toHaveLength(1)
+    expect(list.find(t => t.name === "x")!.description).toBe("second")
   })
 })
 

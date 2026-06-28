@@ -65,4 +65,13 @@ pasted into the UI; never stored client-side.
 
 Sidebar: MCP CLIENTS link added.
 
-Next: 6.6 allocation outcome tracker.
+### 6.6 — Allocation outcome tracker (branch `phase-6.6/allocation-outcomes`)
+
+`GET /api/sync/allocation-outcomes` (CRON_SECRET) walks all `submitted`
+allocations from the last 14 days, fetches the Alpaca order status, and
+flips them to `filled`/`rejected` when the broker reports a final state.
+Audits every state change.
+
+`vercel.json`: cron `*/30 13-21 * * 1-5` (every 30min during market hours).
+
+Next: 6.7 position drawdown monitor.

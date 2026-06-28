@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.5 — /mcp-clients dashboard (branch `phase-6.5/mcp-clients-dashboard`)
+**Active step:** 6.6 — allocation outcome tracker (branch `phase-6.6/allocation-outcomes`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

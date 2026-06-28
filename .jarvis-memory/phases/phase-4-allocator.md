@@ -82,4 +82,20 @@ curl -X POST $URL/api/allocator/run \
 # → { ok: true, generated_at, plan: { equity, rows[], approved_count, total_dollar_at_risk } }
 ```
 
-Next: 4.5 /allocator dashboard page.
+### 4.5 — Allocator UI (branch `phase-4.5/allocator-ui`)
+
+- Lifted CRON_SECRET auth on `/api/allocator/run` (read-only plan generation,
+  parity with other dashboard endpoints). Execute endpoint will keep strict
+  auth when it lands.
+- `/allocator` page with "Run Plan" / "Refresh Plan" button, summary line
+  (equity, approved/total, $ at risk, generated time), and a per-row table
+  showing source, symbol, side, score, size, $ amount, $ risk, risk %,
+  Kelly fraction, status badge, and block reason.
+- Sidebar: added ALLOCATOR link to EXECUTION group.
+
+Approve / execute lands in a follow-up (was originally 4.6 + 4.7 — kept
+manual until user is back to set risk tolerance).
+
+Next: Phase 4 polish or pause for review. /allocator now renders the plan
+end-to-end. Phase 5 (voice/council see opportunities) requires more
+co-ordination — best to pause before it.

@@ -25,4 +25,16 @@ real ranked answer, or "execute opps X, Y, Z" with execute scope.
 
 13 total MCP tools registered.
 
-Next: 6.2 opportunities MCP tools.
+### 6.2 — Opportunities MCP tools (branch `phase-6.2/opportunities-mcp-tools`)
+
+`src/lib/mcp/tools/opportunities.ts` adds 4 tools (separate from source-specific
+splitwatch/swing tools):
+
+- `opportunities.list` — full filtered query, all sources
+- `opportunities.top` — top-N by score with confidence floor 0.5 (chat-friendly)
+- `opportunities.update_status` — approve/reject/mute/reopen, audit_log entry
+- `opportunities.ingest` — push new opp from any client with write scope
+
+17 total MCP tools registered now.
+
+Next: 6.3 /allocations dashboard.

@@ -44,4 +44,12 @@ reliability scores → future allocator weighting.
 - "Hide blocked" toggle (filters to approved rows only)
 - "Showing N of M" counter
 
-Next: 9.5 /memories search + tag filter.
+### 9.5 — /memories search + tag filter (branch `phase-9.5/memories-search`)
+
+- Free-text search box (matches against memory content, case-insensitive)
+- Auto-populated tag pills from current memory set (top 12 + count of extras)
+- Click a tag → filter to just that tag (single-tag mode with ×-to-clear)
+- Combines with existing type filter
+
+Phase 9 nearly done. 51 PRs in stack. Watchlist intelligence (9.3) the
+only remaining queued item.

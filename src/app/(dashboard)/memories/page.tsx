@@ -41,6 +41,8 @@ export default function MemoriesPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | Memory["type"]>("all")
+  const [search, setSearch] = useState<string>("")
+  const [tagFilter, setTagFilter] = useState<string>("")
   const [editing, setEditing] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
   const [newContent, setNewContent] = useState("")
@@ -93,7 +95,11 @@ export default function MemoriesPage() {
     setAdding(false)
   }
 
-  const filtered = filter === "all" ? memories : memories.filter(m => m.type === filter)
+  const allTags = [...new Set(memories.flatMap(m => m.tags ?? []))].sort()
+  const filtered = memories
+    .filter(m => filter === "all" || m.type === filter)
+    .filter(m => !tagFilter || (m.tags ?? []).includes(tagFilter))
+    .filter(m => !search.trim() || m.content.toLowerCase().includes(search.trim().toLowerCase()))
   const types: Memory["type"][] = ["fact", "insight", "pattern", "preference"]
 
   return (
@@ -124,6 +130,35 @@ export default function MemoriesPage() {
           </button>
         ))}
         <span className="text-[10px] text-muted-foreground ml-auto">{filtered.length} shown</span>
+      </div>
+
+      {/* Search + tag filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          type="text"
+          placeholder="search memory content…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="text-xs bg-background border border-border rounded px-2 py-1 w-64 focus:outline-none focus:border-primary"
+        />
+        {tagFilter && (
+          <button onClick={() => setTagFilter("")}
+                  className="text-[10px] tracking-widest px-2 py-0.5 rounded border border-primary text-primary bg-primary/10">
+            #{tagFilter} ×
+          </button>
+        )}
+        {allTags.length > 0 && !tagFilter && (
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">tags:</span>
+            {allTags.slice(0, 12).map(t => (
+              <button key={t} onClick={() => setTagFilter(t)}
+                      className="text-[10px] tracking-widest px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground">
+                #{t}
+              </button>
+            ))}
+            {allTags.length > 12 && <span className="text-[10px] text-muted-foreground">+{allTags.length - 12}</span>}
+          </div>
+        )}
       </div>
 
       {/* Add memory */}

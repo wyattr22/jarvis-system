@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 8.1 — MCP tool registry tests (branch `phase-8.1/mcp-tool-tests`)
+**Active step:** 8.3 — /performance dashboard (branch `phase-8.3/performance-dashboard`)
 
-Phase 7 done. Phase 8 = test coverage + final polish. 43+ PRs stacked.
+Phase 8 in flight (8.2 skipped — sandbox has implicit coverage). 44+ PRs.
 
 ## What's done
 

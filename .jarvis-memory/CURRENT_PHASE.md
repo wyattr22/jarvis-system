@@ -1,8 +1,8 @@
 # Current Phase
 
-**Active step:** 6.11 — expanded test coverage (branch `phase-6.11/expanded-test-coverage`)
+**Active step:** 7.2 — push notifications (branch `phase-7.2/push-notifications`)
 
-Phase 6 = polish + operability. Building autonomously through the day.
+Phase 6 done (10/11). Phase 7 in flight. 40 PRs in stack so far.
 
 ## What's done
 

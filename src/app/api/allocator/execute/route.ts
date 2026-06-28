@@ -17,6 +17,7 @@ import { getAdapter } from "@/lib/brokers"
 import { recordAllocation } from "@/lib/allocator/allocations"
 import { auditLog } from "@/lib/guardrails/audit"
 import { vetoAllocatorPlan } from "@/lib/agents/risk-manager"
+import { sendPushToAll } from "@/lib/push"
 
 export const maxDuration = 60
 
@@ -65,6 +66,12 @@ export async function POST(req: Request) {
   const veto = vetoAllocatorPlan(plan, config, todayPnl)
   if (veto.verdict === "veto") {
     await auditLog("allocator", "plan_vetoed", { reason: veto.reason, warnings: veto.warnings })
+    await sendPushToAll({
+      title: "🛑 Allocator plan vetoed",
+      body: veto.reason,
+      tag: "allocator-veto",
+      url: "/allocator",
+    }).catch(() => {})
     return Response.json({
       ok: false,
       vetoed: true,

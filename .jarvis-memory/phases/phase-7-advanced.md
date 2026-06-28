@@ -22,4 +22,12 @@ Single-page health check at `/system-status`. Refreshes every 30s.
 - Page renders 6 KPI tiles + cron table + opportunities breakdown.
 - Sidebar: STATUS link added.
 
-Next: 7.2 push notifications.
+### 7.2 — Push notifications wiring (branch `phase-7.2/push-notifications`)
+
+Wired existing `sendPushToAll` into:
+- `drawdown-check` cron: pushes only on `danger` severity (warn stays dashboard-visible)
+- `allocator/execute`: pushes when Risk Manager vetoes a plan
+
+Both calls best-effort `.catch` so silent VAPID failures don't break crons/execution.
+
+Next: 7.3 README + onboarding doc.

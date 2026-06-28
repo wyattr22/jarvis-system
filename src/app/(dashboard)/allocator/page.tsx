@@ -62,10 +62,15 @@ const SOURCE_COLORS: Record<string, string> = {
   trading_bot: "#f5c518",
 }
 
+type SortKey = "score" | "risk" | "size"
+
 export default function AllocatorPage() {
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>("score")
+  const [sourceFilter, setSourceFilter] = useState<string>("")
+  const [hideBlocked, setHideBlocked] = useState<boolean>(false)
 
   async function runPlan() {
     setLoading(true)
@@ -123,7 +128,33 @@ export default function AllocatorPage() {
         </div>
       )}
 
-      {data && data.plan.rows.length > 0 && (
+      {data && data.plan.rows.length > 0 && (() => {
+        const sources = [...new Set(data.plan.rows.map(r => r.opportunity.source))]
+        const filtered = data.plan.rows
+          .filter(r => !hideBlocked || r.status === "approved")
+          .filter(r => !sourceFilter || r.opportunity.source === sourceFilter)
+          .sort((a, b) => {
+            if (sortKey === "risk") return b.sizing.dollar_risk - a.sizing.dollar_risk
+            if (sortKey === "size") return b.sizing.dollar_amount - a.sizing.dollar_amount
+            return b.score - a.score  // default: score
+          })
+        return (
+        <>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ color: "#9ca3af", fontSize: 12 }}>SORT</span>
+          {(["score", "risk", "size"] as SortKey[]).map(k => (
+            <FilterPill key={k} label={k} active={sortKey === k} onClick={() => setSortKey(k)} />
+          ))}
+          <div style={{ width: 1, background: "#1f2937", margin: "0 8px", height: 20 }} />
+          <span style={{ color: "#9ca3af", fontSize: 12 }}>SOURCE</span>
+          <FilterPill label="all" active={!sourceFilter} onClick={() => setSourceFilter("")} />
+          {sources.map(s => (
+            <FilterPill key={s} label={s} active={sourceFilter === s} color={SOURCE_COLORS[s]} onClick={() => setSourceFilter(s === sourceFilter ? "" : s)} />
+          ))}
+          <div style={{ width: 1, background: "#1f2937", margin: "0 8px", height: 20 }} />
+          <FilterPill label={hideBlocked ? "show blocked" : "hide blocked"} active={hideBlocked} onClick={() => setHideBlocked(!hideBlocked)} />
+          <span style={{ color: "#6b7280", fontSize: 12, marginLeft: 12 }}>showing {filtered.length} of {data.plan.rows.length}</span>
+        </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #1f2937", color: "#9ca3af", fontSize: 12, textAlign: "left" }}>
@@ -141,7 +172,7 @@ export default function AllocatorPage() {
             </tr>
           </thead>
           <tbody>
-            {data.plan.rows.map(row => {
+            {filtered.map(row => {
               const o = row.opportunity
               const s = row.sizing
               return (
@@ -177,8 +208,25 @@ export default function AllocatorPage() {
             })}
           </tbody>
         </table>
-      )}
+        </>
+        )
+      })()}
     </div>
+  )
+}
+
+function FilterPill({ label, active, color, onClick }: { label: string; active: boolean; color?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+            style={{
+              background: active ? (color ?? "#00d4a1") : "transparent",
+              color: active ? "#080d14" : "#9ca3af",
+              border: `1px solid ${active ? "transparent" : "#1f2937"}`,
+              padding: "4px 12px", borderRadius: 999, fontSize: 12, cursor: "pointer",
+              fontWeight: active ? 600 : 400,
+            }}>
+      {label}
+    </button>
   )
 }
 

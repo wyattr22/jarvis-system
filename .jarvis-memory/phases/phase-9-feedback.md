@@ -35,4 +35,13 @@ Closes the learning loop:
 Closes the feedback loop: opportunities → executions → trade outcomes →
 reliability scores → future allocator weighting.
 
-Next: 9.3 watchlist intelligence.
+### 9.4 — Allocator UI sort + filter (branch `phase-9.4/allocator-ui-filters`)
+
+(Was deferred 8.4 — picked up now.)
+
+- Sort pills: score / risk / size (descending)
+- Source filter pills (auto-populated from current plan)
+- "Hide blocked" toggle (filters to approved rows only)
+- "Showing N of M" counter
+
+Next: 9.5 /memories search + tag filter.

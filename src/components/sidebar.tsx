@@ -19,6 +19,7 @@ const NAV = [
   { href: "/opportunities", label: "OPPORTUNITIES", group: "execution" },
   { href: "/allocator",     label: "ALLOCATOR",     group: "execution" },
   { href: "/allocations",   label: "ALLOCATIONS",   group: "execution" },
+  { href: "/risk-config",   label: "RISK CONFIG",   group: "execution" },
   { href: "/proposals",     label: "PROPOSALS",     group: "council" },
   { href: "/experiments",   label: "EXPERIMENTS",   group: "council" },
   { href: "/council",       label: "COUNCIL",       group: "council" },

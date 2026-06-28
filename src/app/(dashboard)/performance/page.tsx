@@ -16,11 +16,20 @@ type Summary = {
 
 type DailyPoint = { day: string; daily_pnl: number; cumulative_pnl: number }
 
+type StrategyRow = {
+  strategy_id: string
+  trades: number
+  wins: number
+  weighted_pnl: number
+  avg_r: number
+}
+
 type ApiResponse = {
   ok: boolean
   days_back: number
   summary: Summary | null
   daily: DailyPoint[]
+  by_strategy?: StrategyRow[]
   message?: string
 }
 
@@ -73,6 +82,40 @@ export default function PerformancePage() {
           {data.daily.length > 0 && (
             <EquityChart points={data.daily} />
           )}
+
+          {data.by_strategy && data.by_strategy.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 12, color: "#9ca3af", letterSpacing: 0.5, marginBottom: 12 }}>
+                BY STRATEGY
+              </h3>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #1f2937", color: "#9ca3af", fontSize: 12, textAlign: "left" }}>
+                    <th style={th}>Strategy</th>
+                    <th style={thRight}>Trades</th>
+                    <th style={thRight}>Wins</th>
+                    <th style={thRight}>Win %</th>
+                    <th style={thRight}>Weighted P&L</th>
+                    <th style={thRight}>Avg R</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.by_strategy.map(s => (
+                    <tr key={s.strategy_id} style={{ borderBottom: "1px solid #1f2937" }}>
+                      <td style={td}><b>{s.strategy_id}</b></td>
+                      <td style={tdRight}>{s.trades}</td>
+                      <td style={tdRight}>{s.wins}</td>
+                      <td style={tdRight}>{s.trades > 0 ? `${((s.wins / s.trades) * 100).toFixed(0)}%` : "—"}</td>
+                      <td style={{ ...tdRight, color: s.weighted_pnl >= 0 ? "#00d4a1" : "#ff5c5c" }}>
+                        ${s.weighted_pnl.toFixed(0)}
+                      </td>
+                      <td style={{ ...tdRight, color: s.avg_r >= 0 ? "#00d4a1" : "#ff5c5c" }}>{s.avg_r.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -112,3 +155,8 @@ function EquityChart({ points }: { points: DailyPoint[] }) {
     </div>
   )
 }
+
+const th: React.CSSProperties = { padding: "10px 12px", fontWeight: 500 }
+const thRight: React.CSSProperties = { ...th, textAlign: "right" }
+const td: React.CSSProperties = { padding: "10px 12px", fontSize: 13 }
+const tdRight: React.CSSProperties = { ...td, textAlign: "right", fontVariantNumeric: "tabular-nums" }

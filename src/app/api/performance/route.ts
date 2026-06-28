@@ -68,6 +68,49 @@ export async function GET(req: Request) {
     if (dd > maxDD) maxDD = dd
   }
 
+  // Per-strategy breakdown via attribution table.
+  // contribution_pct weights each trade's P&L across strategies that influenced it.
+  let byStrategy: Array<{
+    strategy_id: string
+    trades: number
+    wins: number
+    weighted_pnl: number
+    avg_r: number
+  }> = []
+  try {
+    const r = await db.execute({
+      sql: `
+        SELECT a.strategy_id,
+               COUNT(DISTINCT t.id) AS n,
+               SUM(CASE WHEN t.r_multiple > 0 THEN 1 ELSE 0 END) AS wins,
+               SUM(t.pnl * COALESCE(a.contribution_pct, 1.0)) AS weighted_pnl,
+               AVG(t.r_multiple) AS avg_r
+        FROM trades t
+        JOIN attribution a ON a.trade_id = t.id
+        WHERE t.r_multiple IS NOT NULL AND t.opened_at >= ?
+        GROUP BY a.strategy_id
+        ORDER BY weighted_pnl DESC
+      `,
+      args: [since],
+    })
+    byStrategy = r.rows.map(row => {
+      const r = row as unknown as {
+        strategy_id: string
+        n: number
+        wins: number
+        weighted_pnl: number
+        avg_r: number
+      }
+      return {
+        strategy_id: String(r.strategy_id),
+        trades: Number(r.n),
+        wins: Number(r.wins),
+        weighted_pnl: Number(r.weighted_pnl ?? 0),
+        avg_r: Number(r.avg_r ?? 0),
+      }
+    })
+  } catch { /* attribution table may be empty */ }
+
   return Response.json({
     ok: true,
     days_back: days,
@@ -83,5 +126,6 @@ export async function GET(req: Request) {
       max_drawdown_usd: maxDD,
     },
     daily,
+    by_strategy: byStrategy,
   })
 }

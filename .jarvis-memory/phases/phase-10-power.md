@@ -23,4 +23,17 @@ Exported `_testHelpers` from `quality.ts` so tests can poke at the
 private helpers without spinning up a DB. Comment explicitly marks it
 test-only.
 
-Next: 10.2 symbol detail page.
+### 10.2 — Symbol detail page (branch `phase-10.2/symbol-detail-page`)
+
+`/symbol/[ticker]` drill-down with parallel fetches:
+- Live position (if any)
+- KPI tiles: open opps, allocations, signals, memories, trade stats, P&L
+- Opportunities, allocations, memories sections with rows
+- Chart link → `/charts?symbol=X`
+
+Backend: `GET /api/symbol/[ticker]` runs 6 parallel queries (opps,
+allocs, signals, memories, trades, live position). Validates ticker regex.
+
+Useful for "show me everything about TSLA" in one page.
+
+Next: 10.3 council.run MCP tool.

@@ -23,6 +23,8 @@ const ACTORS = ["", "user", "bot", "council", "system", "cron"]
 export default function AuditLogPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [actor, setActor] = useState("")
+  const [actionFilter, setActionFilter] = useState("")
+  const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -47,7 +49,7 @@ export default function AuditLogPage() {
           <h1 className="text-sm font-medium tracking-[0.15em] text-primary uppercase">Audit Log</h1>
           <p className="text-xs text-muted-foreground mt-1">Immutable record of all system activity</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={actor}
             onChange={e => setActor(e.target.value)}
@@ -57,6 +59,20 @@ export default function AuditLogPage() {
               <option key={a} value={a}>{a ? a.toUpperCase() : "ALL ACTORS"}</option>
             ))}
           </select>
+          <input
+            type="text"
+            placeholder="action filter (e.g. drawdown)"
+            value={actionFilter}
+            onChange={e => setActionFilter(e.target.value)}
+            className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground w-44"
+          />
+          <input
+            type="text"
+            placeholder="search details…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground w-44"
+          />
           <button
             onClick={() => load(actor)}
             className="text-[10px] tracking-widest text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
@@ -74,9 +90,26 @@ export default function AuditLogPage() {
         <div className="flex items-center justify-center h-64 border border-dashed rounded text-muted-foreground text-xs tracking-widest">
           NO AUDIT ENTRIES
         </div>
-      ) : (
+      ) : (() => {
+        const action = actionFilter.toLowerCase()
+        const q = search.toLowerCase()
+        const filtered = entries.filter(e =>
+          (!action || e.action.toLowerCase().includes(action)) &&
+          (!q || (e.details_json ?? "").toLowerCase().includes(q))
+        )
+        if (filtered.length === 0) {
+          return (
+            <div className="flex items-center justify-center h-32 border border-dashed rounded text-muted-foreground text-xs tracking-widest">
+              NO MATCHES (try clearing filters)
+            </div>
+          )
+        }
+        return (
         <div className="space-y-1">
-          {entries.map(e => {
+          <div className="text-[10px] text-muted-foreground tracking-widest">
+            SHOWING {filtered.length} OF {entries.length}
+          </div>
+          {filtered.map(e => {
             const details = e.details_json ? (() => { try { return JSON.parse(e.details_json!) } catch { return null } })() : null
             const isExpanded = expanded === e.id
             return (
@@ -110,7 +143,8 @@ export default function AuditLogPage() {
             )
           })}
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

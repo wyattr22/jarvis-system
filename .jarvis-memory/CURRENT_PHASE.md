@@ -1,7 +1,7 @@
 # Current Phase
 
 **Active phase:** Phase 1 — MCP Foundation
-**Active step:** 4.2 — Kelly-capped sizer (branch `phase-4.2/sizer`)
+**Active step:** 4.3 — portfolio scorer (branch `phase-4.3/scorer`)
 
 Phase 1 is fully coded (PRs #1–8). 1.7 (Claude Desktop smoke test) is
 post-deploy and waits on merge.

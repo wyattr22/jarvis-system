@@ -36,4 +36,13 @@ allocs, signals, memories, trades, live position). Validates ticker regex.
 
 Useful for "show me everything about TSLA" in one page.
 
-Next: 10.3 council.run MCP tool.
+### 10.3 — Council MCP tools (branch `phase-10.3/council-mcp-tool`)
+
+- `council.run(strategy_id)` — triggers a full council cycle via the
+  existing `/api/council/orchestrate` route. Requires `execute:trades`
+  scope since it can land strategy proposals. Long-running (2min timeout).
+- `council.recent(limit, status?)` — list recent proposals.
+
+Registry test bumped to 20 tools expected.
+
+Next: 10.4 /agent-log search + filter.

@@ -17,6 +17,7 @@ import "@/lib/mcp/tools/brokers"
 import "@/lib/mcp/tools/allocator"
 import "@/lib/mcp/tools/opportunities"
 import "@/lib/mcp/tools/performance"
+import "@/lib/mcp/tools/council"
 
 export const maxDuration = 60
 

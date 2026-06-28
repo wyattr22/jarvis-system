@@ -1,6 +1,6 @@
 # Current Phase
 
-**Active step:** 6.7 — drawdown monitor (branch `phase-6.7/drawdown-monitor`)
+**Active step:** 6.8 — cross-repo onboard script (branch `phase-6.8/cross-repo-script`)
 
 Phase 6 = polish + operability. Building autonomously through the day.
 

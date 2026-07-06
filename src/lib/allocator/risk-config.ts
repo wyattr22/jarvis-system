@@ -15,6 +15,8 @@ export type RiskConfig = {
   max_correlated_exposure_pct: number  // 0..1
   asset_class_caps: Record<string, number>  // assetClass → max % of equity
   kelly_fraction_cap: number           // never bet more than this fraction of Kelly (e.g. 0.25 = quarter-Kelly)
+  auto_execute: boolean                // master switch: auto-cycle may place paper orders (12.8)
+  auto_max_orders_per_cycle: number    // ceiling on orders per auto cycle
   updated_at: number
 }
 
@@ -32,6 +34,8 @@ const DEFAULTS: RiskConfig = {
     prediction: 0.05,
   },
   kelly_fraction_cap: 0.25,
+  auto_execute: false,                 // OFF until explicitly enabled on /risk-config
+  auto_max_orders_per_cycle: 3,
   updated_at: 0,
 }
 

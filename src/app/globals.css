@@ -59,3 +59,13 @@ body {
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* Clickable market tiles (12.1) — subtle lift + border glow on hover */
+.jarvis-tile {
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.jarvis-tile:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}

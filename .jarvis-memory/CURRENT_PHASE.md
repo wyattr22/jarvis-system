@@ -1,6 +1,24 @@
 # Current Phase
 
-**Phase 11 — Full Market Visibility (in flight, started 2026-07-05).**
+**Phase 12 — Trading Engine Overhaul (started 2026-07-06).** Phase 11 complete.
+
+## Phase 12 step table (user-driven scope)
+
+| Step | What | Status |
+|---|---|---|
+| 12.1 | Markets tiles → TradingView chart popup (modal + tv-symbol mapping) | ✅ this PR |
+| 12.2 | Remove drift monitor (~10 touch points) | queued |
+| 12.3 | Whole-market scanner → rotating universe table (single source of truth) | queued |
+| 12.4 | Internal signal engine over the universe (pinger-driven) | queued |
+| 12.5 | Feature library: any stock, live on-demand compute | queued |
+| 12.6 | Adjustable backtest (build-your-own strategy params) | queued |
+| 12.7 | Shadow vs live comparison engine | queued |
+| 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |
+| 12.9 | Council transparency — persist + render deliberation | queued |
+| 12.10 | Humanize meta-decisions + audit log | queued |
+| 12.11 | UI polish pass (user request mid-phase) | queued |
+
+## Previous phase (11) — Full Market Visibility (COMPLETE, deployed)
 
 Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 

@@ -3,6 +3,7 @@
 // % as text — polarity is never color-alone.
 
 import { getSectorETFs } from "@/lib/data/alpaca"
+import { ChartTile } from "@/components/chart-modal"
 import { ErrorNote } from "./shared"
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -43,14 +44,15 @@ export async function SectorHeatmap() {
       {entries.map(([etf, pct]) => {
         const s = heatCellStyle(pct)
         return (
-          <div
-            key={etf}
-            title={`${etf} ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% today`}
-            style={{ ...s, borderRadius: 4, padding: "10px 8px", textAlign: "center" }}
-          >
-            <div style={{ fontSize: 10, opacity: 0.85 }}>{SECTOR_LABELS[etf] ?? etf}</div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}%</div>
-          </div>
+          <ChartTile key={etf} symbol={etf}>
+            <div
+              title={`${etf} ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% today`}
+              style={{ ...s, borderRadius: 4, padding: "10px 8px", textAlign: "center" }}
+            >
+              <div style={{ fontSize: 10, opacity: 0.85 }}>{SECTOR_LABELS[etf] ?? etf}</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}%</div>
+            </div>
+          </ChartTile>
         )
       })}
     </div>

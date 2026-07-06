@@ -3,6 +3,7 @@
 // slow or dead provider degrades one panel, never the page.
 
 import { Suspense } from "react"
+import { ChartModal } from "@/components/chart-modal"
 import { IndexTiles } from "./sections/index-tiles"
 import { FuturesStrip } from "./sections/futures-strip"
 import { ForexGrid } from "./sections/forex-grid"
@@ -41,11 +42,13 @@ function Skeleton({ height = 72 }: { height?: number }) {
 export default function MarketsPage() {
   return (
     <div style={{ padding: 24, color: "#e5e7eb" }}>
+      <ChartModal />
       <h1 style={{ fontSize: 22, marginBottom: 4 }}>Markets</h1>
       <p style={{ color: "#9ca3af", marginBottom: 24 }}>
         Complete market visibility — every price carries an honest freshness badge.
-        Futures and indexes are delayed (no free real-time CME/index data exists);
-        each future is paired with its real-time ETF proxy.
+        Click any tile for its TradingView chart. Futures and indexes are delayed
+        (no free real-time CME/index data exists); each future is paired with its
+        real-time ETF proxy.
       </p>
 
       <Panel title="INDEXES">

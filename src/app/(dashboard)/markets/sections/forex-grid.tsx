@@ -5,6 +5,7 @@
 
 import { getYahooQuotes } from "@/lib/data/yahoo"
 import { FreshnessBadge } from "@/components/ui/freshness-badge"
+import { ChartTile } from "@/components/chart-modal"
 import { changeColor, fmtPct, tileStyle, ErrorNote } from "./shared"
 
 const MAJORS: { pair: string; yahoo: string }[] = [
@@ -29,14 +30,16 @@ export async function ForexGrid() {
         if (!q) return null
         const digits = q.price >= 20 ? 2 : 4
         return (
-          <div key={pair} style={{ ...tileStyle, minWidth: 120 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: "#9ca3af" }}>{pair}</span>
-              <FreshnessBadge meta={q.meta} />
+          <ChartTile key={pair} symbol={yahoo}>
+            <div style={{ ...tileStyle, minWidth: 120 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>{pair}</span>
+                <FreshnessBadge meta={q.meta} />
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 600, marginTop: 2 }}>{q.price.toFixed(digits)}</div>
+              <div style={{ fontSize: 12, color: changeColor(q.changePct) }}>{fmtPct(q.changePct)}</div>
             </div>
-            <div style={{ fontSize: 18, fontWeight: 600, marginTop: 2 }}>{q.price.toFixed(digits)}</div>
-            <div style={{ fontSize: 12, color: changeColor(q.changePct) }}>{fmtPct(q.changePct)}</div>
-          </div>
+          </ChartTile>
         )
       })}
     </div>

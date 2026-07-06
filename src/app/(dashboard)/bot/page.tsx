@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -146,12 +147,15 @@ export default function BotStatusPage() {
           <h1 className="text-sm font-medium tracking-[0.15em] text-primary uppercase">Bot Status</h1>
           <p className="text-xs text-muted-foreground mt-1">Alpaca paper account · live positions · kill switches</p>
         </div>
-        <button
-          onClick={load}
-          className="text-[10px] tracking-widest text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
-        >
-          REFRESH
-        </button>
+        <div className="flex items-center gap-2">
+          <AutoExecuteBadge />
+          <button
+            onClick={load}
+            className="text-[10px] tracking-widest text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
+          >
+            REFRESH
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -382,5 +386,29 @@ function StatCard({ label, value, warn, ok }: { label: string; value: string; wa
         {value}
       </p>
     </div>
+  )
+}
+
+// Auto-execute master-switch status (12.8). Read-only here — the toggle
+// lives on /risk-config (writes need CRON_SECRET).
+function AutoExecuteBadge() {
+  const [enabled, setEnabled] = useState<boolean | null>(null)
+  useEffect(() => {
+    fetch("/api/admin/risk-config")
+      .then(r => r.json())
+      .then(d => setEnabled(d.config?.auto_execute === true))
+      .catch(() => setEnabled(null))
+  }, [])
+  if (enabled === null) return null
+  return (
+    <Link
+      href="/risk-config"
+      title="Auto-execution master switch — toggle on Risk Config"
+      className={`text-[9px] tracking-widest border rounded px-2 py-1 ${
+        enabled ? "text-primary border-primary/40" : "text-yellow-400 border-yellow-400/30"
+      }`}
+    >
+      AUTO-EXECUTE {enabled ? "ON" : "OFF"}
+    </Link>
   )
 }

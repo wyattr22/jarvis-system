@@ -58,3 +58,20 @@ from Vercel.**
 context and dashboards, NOT for signal timing. Real-time decisions should key
 off Alpaca IEX equities/ETF proxies only. Options analytics (max pain, GEX)
 are positioning measures where 15 minutes is immaterial.
+
+## Intraday cadence via external pinger (12.8 — user action to activate)
+
+Vercel Hobby crons are daily-only, so intraday loops run via a free
+cron-job.org account hitting these endpoints with header
+`Authorization: Bearer $CRON_SECRET`:
+
+| Endpoint | Suggested cadence (market hours, Mon–Fri 13:30–20:00 UTC) |
+|---|---|
+| `/api/signals/scan` | every 15 min |
+| `/api/execution/auto-cycle` | every 15 min (offset ~5 min after signals) |
+| `/api/sync/fills` | every 30 min |
+| `/api/sync/drawdown-check` | every 15 min |
+
+The daily Vercel crons stay as fallback heartbeats. Auto-execution places
+NOTHING until `auto_execute` is flipped to true on /risk-config, and every
+order still passes sizing caps + Risk-Manager veto + market-hours gate.

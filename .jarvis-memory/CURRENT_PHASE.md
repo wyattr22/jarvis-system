@@ -9,8 +9,8 @@
 | 12.1 | Markets tiles → TradingView chart popup (modal + tv-symbol mapping) | ✅ merged (#71) |
 | 12.2 | Remove drift monitor | ✅ merged (#72) |
 | 12.3 | Whole-market scanner → rotating universe (12,659 symbols/35s live-verified) | ✅ merged (#73) |
-| 12.4 | Internal signal engine: smc-ict-v4 over universe top-50, 3 batch calls/sweep, 4h per-symbol cooldown, /api/signals/scan pinger endpoint + daily cron fallback | ✅ this PR |
-| 12.5 | Feature library: any stock, live on-demand compute | queued |
+| 12.4 | Internal signal engine over the universe | ✅ merged (#74) |
+| 12.5 | Features: live on-demand compute for ANY symbol (`?compute=1`), page input + COMPUTE LIVE button; cron already covers universe top-50 (12.3) | ✅ this PR |
 | 12.6 | Adjustable backtest (build-your-own strategy params) | queued |
 | 12.7 | Shadow vs live comparison engine | queued |
 | 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |

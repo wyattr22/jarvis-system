@@ -7,8 +7,8 @@
 | Step | What | Status |
 |---|---|---|
 | 12.1 | Markets tiles → TradingView chart popup (modal + tv-symbol mapping) | ✅ merged (#71) |
-| 12.2 | Remove drift monitor — routes, lib, page, cron, sidebar, limits, system-status, voice refs. NOTE: this removes the auto-pause safety; strategies remain manually pausable on /bot. drift_log table left in DB (harmless, unreferenced) | ✅ this PR |
-| 12.3 | Whole-market scanner → rotating universe table (single source of truth) | queued |
+| 12.2 | Remove drift monitor | ✅ merged (#72) |
+| 12.3 | Whole-market scanner → rotating universe. Live-verified: 12,659 symbols in 35s, 1,408 passed filters, top 150 stored. features/compute now reads top 50 of scan_universe (LEGACY_UNIVERSE fallback). Daily pre-market cron | ✅ this PR |
 | 12.4 | Internal signal engine over the universe (pinger-driven) | queued |
 | 12.5 | Feature library: any stock, live on-demand compute | queued |
 | 12.6 | Adjustable backtest (build-your-own strategy params) | queued |

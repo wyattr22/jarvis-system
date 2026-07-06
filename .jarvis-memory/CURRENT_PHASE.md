@@ -33,10 +33,27 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.6 | phase-11.6/instrument-model | ✅ merged (#63) |
 | 11.7 | phase-11.7/markets-page | ✅ merged (#64) |
 | 11.8 | phase-11.8/watchlist-universe | ✅ merged (#65) |
-| 11.9 | phase-11.9/llm-chain-and-api-audit | ✅ this PR |
-| 11.10 | phase-11.10/mcp-markets-tool | queued |
+| 11.9 | phase-11.9/llm-chain-and-api-audit | ✅ merged (#66) |
+| 11.10 | phase-11.10/mcp-markets-tool | ✅ this PR |
 
-## This PR (11.9) — LLM chain reorder + API budget audit
+## This PR (11.10) — MCP markets tools
+
+- `markets.overview` — the /markets aggregate (indexes, futures+proxies,
+  macro, sectors, movers, SPY options pulse) with `meta` freshness on every
+  quote; description tells LLM clients delayed values are context, not
+  signal timing. Scope `read:signals`.
+- `markets.quote` — cross-asset quote via the same parseInstrument dispatch
+  as `/api/quote/[symbol]`.
+- Registry now 22 tools; registry smoke test extended.
+- KNOWN_ISSUES: `domain/mcp-tool-catalog.md` linked from INDEX.md never
+  existed — generate from `listTools()` later.
+
+**Phase 11 core is COMPLETE except 11.3 (Finnhub provider) — still gated on
+FINNHUB_API_KEY landing in Vercel env.** When the key appears: build 11.3
+(finnhub.ts provider, earnings migration off Alpha Vantage, forex-grid
+activation on /markets, forex primary in the quote dispatch).
+
+## Previous PR (11.9) — LLM chain reorder + API budget audit
 
 - `providers.ts`: explicit `priority` field; Cerebras-70b first (1M tok/day
   free vs Groq ~1K req/day); router candidates sorted by it.

@@ -20,6 +20,7 @@ beforeAll(async () => {
   await import("./opportunities")
   await import("./performance")
   await import("./council")
+  await import("./markets")
 })
 
 const EXPECTED_TOOLS = [
@@ -39,6 +40,8 @@ const EXPECTED_TOOLS = [
   "performance.summary",
   // council
   "council.run", "council.recent",
+  // markets (11.10)
+  "markets.overview", "markets.quote",
 ] as const
 
 describe("MCP tool catalog", () => {

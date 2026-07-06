@@ -16,7 +16,6 @@ const NAV = [
   { href: "/backtest",      label: "BACKTEST",      group: "execution" },
   { href: "/strategies",    label: "STRATEGIES",    group: "execution" },
   { href: "/features",      label: "FEATURES",      group: "execution" },
-  { href: "/drift",         label: "DRIFT",         group: "execution" },
   { href: "/source-quality",label: "SOURCES",       group: "execution" },
   { href: "/opportunities", label: "OPPORTUNITIES", group: "execution" },
   { href: "/allocator",     label: "ALLOCATOR",     group: "execution" },

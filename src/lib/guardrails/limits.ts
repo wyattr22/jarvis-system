@@ -6,10 +6,7 @@ export const LIMITS = {
   CAPITAL_TIER_1_PCT: 0.01,      // 1% — tier 1 strategies
   CAPITAL_TIER_2_PCT: 0.05,      // 5% — tier 2 strategies
   CAPITAL_TIER_FULL: 1.0,        // full allocation — promoted strategies
-  MIN_R_RATIO: 2.0,              // minimum R:R to take a trade
-  DRIFT_SIGMA_THRESHOLD: 2.0,    // sigma deviation before auto-pause
-  DRIFT_TRADE_WINDOW: 20,        // trades to measure drift over
-  SHADOW_MIN_TRADES: 50,         // shadow trades required before promotion
+  MIN_R_RATIO: 2.0,              // minimum R:R to take a trade  SHADOW_MIN_TRADES: 50,         // shadow trades required before promotion
   SHADOW_P_VALUE: 0.05,          // p-value threshold for promotion
   TIER_1_PROFITABLE_TRADES: 30,  // trades needed to advance from tier 1→2
   TIER_2_PROFITABLE_TRADES: 90,  // trades needed to advance from tier 2→full

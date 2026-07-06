@@ -275,20 +275,6 @@ async function buildContext(tickers: string[]): Promise<string> {
     if (stratStr) parts.push(`STRATEGIES: ${stratStr}`)
   } catch { /* ignore */ }
 
-  // Drift alerts
-  try {
-    const drift = await db.execute({
-      sql: "SELECT strategy_id, divergence_sigma, auto_paused FROM drift_log ORDER BY window_end DESC LIMIT 3",
-      args: [],
-    })
-    if (drift.rows.length) {
-      const driftStr = drift.rows.map(d =>
-        `${d.strategy_id}: σ=${Number(d.divergence_sigma).toFixed(2)}${d.auto_paused ? ' [PAUSED]' : ''}`
-      ).join(', ')
-      parts.push(`DRIFT: ${driftStr}`)
-    }
-  } catch { /* ignore */ }
-
   // Dynamic knowledge entries (user-recorded via voice)
   const dynKnowledge = await getDynamicKnowledge().catch(() => "")
   if (dynKnowledge) parts.push(dynKnowledge)
@@ -451,7 +437,7 @@ function detectAction(query: string, chartSymbol?: string): VoiceAction | null {
       'SWITCH','JUMP','DISPLAY','GO','TO','UP','ME','THE','AND','ON','AT','FOR',
       'IN','MY','IT','A','AN','BY','OF','OR','DO','LET',
       // Page names — navigation requests, not ticker symbols
-      'NEWS','WATCH','DRIFT','MEMORY','AUDIT','LOG','BOT','BOTS','META','PAGE','TAB','TABS',
+      'NEWS','WATCH','MEMORY','AUDIT','LOG','BOT','BOTS','META','PAGE','TAB','TABS',
     ])
     // Text input — user typed uppercase ticker (e.g. "show me NVTS")
     for (const m of query.matchAll(/\b([A-Z]{2,6})\b/g)) {
@@ -678,7 +664,6 @@ The dashboard has these sections:
 - BACKTEST: Run historical simulations on strategies.
 - STRATEGIES: All registered trading strategies with their status and performance.
 - FEATURES: The 42 technical features computed per instrument every day (RSI, ATR, VWAP distance, FVG age, kill zone, prior day range/ATR ratio, etc.). These feed the Observer's pattern mining.
-- DRIFT: Statistical drift monitor. If a strategy's live R-multiple diverges more than 2 sigma from backtest expectations, it auto-pauses. You can see the sigma alerts here.
 - PROPOSALS: Council-generated proposals to change strategy parameters. Each goes through shadow testing before being promoted.
 - EXPERIMENTS: Active A/B shadow tests. A proposed change runs alongside the original to accumulate statistical evidence before being adopted.
 - COUNCIL: The multi-agent council that runs every Sunday. Four agents analyze performance and submit proposals: Observer (ML pattern mining), Researcher (hypothesis generation), Critic A/B/C (three different LLM families review proposals), Meta-Agent (evaluates the agents themselves). Proposals require 2-of-3 critic approval to advance.

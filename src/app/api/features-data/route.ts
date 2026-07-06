@@ -1,8 +1,29 @@
 import { db } from "@/lib/db/client"
+import { getBars } from "@/lib/data/alpaca"
+import { computeFeatures } from "@/lib/features/engineer"
+import { storeFeatures } from "@/lib/features/store"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const instrument = searchParams.get("instrument") ?? "TSLA"
+  const instrument = (searchParams.get("instrument") ?? "TSLA").toUpperCase()
+  const compute = searchParams.get("compute") === "1"
+
+  // Live on-demand compute (12.5): ANY symbol, fresh bars, stored + returned.
+  if (compute) {
+    try {
+      const bars = await getBars(instrument, "15Min", 500)
+      if (bars.length < 30) {
+        return Response.json({ error: `not enough bars for ${instrument} (${bars.length})` }, { status: 422 })
+      }
+      const fs = computeFeatures(instrument, bars)
+      if (!fs) {
+        return Response.json({ error: `feature computation failed for ${instrument}` }, { status: 422 })
+      }
+      await storeFeatures(fs).catch(() => {}) // persist best-effort
+    } catch (err) {
+      return Response.json({ error: String(err) }, { status: 502 })
+    }
+  }
 
   // Get the latest snapshot for the instrument
   const snapshotResult = await db.execute({

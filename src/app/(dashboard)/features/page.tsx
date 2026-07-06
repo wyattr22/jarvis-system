@@ -57,17 +57,32 @@ export default function FeatureLibraryPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
 
-  async function load(inst: string) {
-    setLoading(true)
+  const [symbolInput, setSymbolInput] = useState("")
+  const [computing, setComputing] = useState(false)
+  const [computeError, setComputeError] = useState<string | null>(null)
+
+  async function load(inst: string, compute = false) {
+    if (compute) { setComputing(true); setComputeError(null) } else setLoading(true)
     try {
-      const res = await fetch(`/api/features-data?instrument=${inst}`)
+      const res = await fetch(`/api/features-data?instrument=${inst}${compute ? "&compute=1" : ""}`)
       const json = await res.json()
+      if (json.error) { setComputeError(json.error); return }
       setFeatures(json.features ?? [])
       setTimestamp(json.timestamp)
       setInstruments(json.instruments ?? [])
     } finally {
       setLoading(false)
+      setComputing(false)
     }
+  }
+
+  // Live compute for ANY symbol (12.5) — fetches fresh bars server-side.
+  async function computeLive() {
+    const s = symbolInput.trim().toUpperCase()
+    if (!s) return
+    setInstrument(s)
+    await load(s, true)
+    setSymbolInput("")
   }
 
   useEffect(() => { load(instrument) }, [instrument])
@@ -89,12 +104,27 @@ export default function FeatureLibraryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            value={symbolInput}
+            onChange={e => setSymbolInput(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === "Enter" && computeLive()}
+            placeholder="ANY SYMBOL..."
+            className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground placeholder:text-muted-foreground w-28 uppercase"
+          />
+          <button
+            onClick={computeLive}
+            disabled={computing || !symbolInput.trim()}
+            className="text-[10px] tracking-widest border border-primary/40 text-primary rounded px-2 py-1 disabled:opacity-40"
+          >
+            {computing ? "COMPUTING..." : "COMPUTE LIVE"}
+          </button>
           {instruments.length > 0 && (
             <select
-              value={instrument}
-              onChange={e => setInstrument(e.target.value)}
+              value={instruments.includes(instrument) ? instrument : ""}
+              onChange={e => e.target.value && setInstrument(e.target.value)}
               className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground"
             >
+              {!instruments.includes(instrument) && <option value="">{instrument}</option>}
               {instruments.map(i => <option key={i} value={i}>{i}</option>)}
             </select>
           )}
@@ -107,6 +137,9 @@ export default function FeatureLibraryPage() {
         </div>
       </div>
 
+      {computeError && (
+        <p className="text-xs text-red-400 tracking-widest">{computeError}</p>
+      )}
       {loading ? (
         <div className="flex items-center justify-center h-40">
           <p className="text-xs text-muted-foreground tracking-widest">LOADING...</p>

@@ -222,8 +222,46 @@ export async function getVIX(): Promise<number | null> {
   }
 }
 
+// Whole-market top movers from Alpaca's free screener (real-time IEX).
+// Covers small caps naturally — the screener scans the entire tape.
+export interface Mover {
+  symbol: string
+  price: number
+  change: number
+  percentChange: number
+}
+
+export interface MoversSnapshot {
+  gainers: Mover[]
+  losers: Mover[]
+  meta: import("./freshness").QuoteMeta
+}
+
+export async function getMovers(top = 10): Promise<MoversSnapshot | null> {
+  try {
+    const url = `https://data.alpaca.markets/v1beta1/screener/stocks/movers?top=${top}`
+    const res = await safeFetch(url, { headers: headers(), cache: "no-store", signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return null
+    const json = await res.json()
+    const map = (m: { symbol: string; price: number; change: number; percent_change: number }): Mover => ({
+      symbol: m.symbol,
+      price: m.price,
+      change: m.change,
+      percentChange: m.percent_change,
+    })
+    return {
+      gainers: (json.gainers ?? []).map(map),
+      losers: (json.losers ?? []).map(map),
+      meta: metaFor("alpaca.iex", json.last_updated ?? ""),
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function getSectorETFs(): Promise<Record<string, number>> {
-  const etfs = ["SPY", "XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLC"]
+  // All 11 SPDR sector ETFs + SPY benchmark
+  const etfs = ["SPY", "XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLC", "XLP", "XLU", "XLRE", "XLB"]
   const results: Record<string, number> = {}
 
   await Promise.allSettled(

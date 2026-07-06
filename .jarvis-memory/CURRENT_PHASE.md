@@ -30,13 +30,34 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — **still not added**) | queued |
 | 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ merged (#61) |
 | 11.5 | phase-11.5/futures-indexes-catalog | ✅ merged (#62) |
-| 11.6 | phase-11.6/instrument-model | ✅ this PR |
-| 11.7 | phase-11.7/markets-page | queued |
+| 11.6 | phase-11.6/instrument-model | ✅ merged (#63) |
+| 11.7 | phase-11.7/markets-page | ✅ this PR |
 | 11.8 | phase-11.8/watchlist-universe | queued |
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.6) — instrument model
+## This PR (11.7) — /markets overview page
+
+The visible payoff: one cockpit for indexes, futures (delayed + live ETF proxy
+side-by-side), forex (placeholder until FINNHUB_API_KEY + 11.3), macro,
+11-SPDR sector heatmap, whole-market movers (incl. small caps), and SPY/QQQ
+options pulse. Every price wears a `FreshnessBadge` (LIVE / DELAYED Xm / EOD /
+STALE — computed from actual print age, so weekend quotes honestly show EOD).
+
+- `components/ui/freshness-badge.tsx` — the honesty artifact; tooltip explains
+  IEX thinness on the LIVE badge.
+- `markets/page.tsx` + 7 streaming Suspense sections; `loading.tsx` skeleton.
+- `alpaca.ts`: `getMovers()` (free screener endpoint) + sectors extended to
+  all 11 SPDRs (added XLP, XLU, XLRE, XLB).
+- Heatmap polarity pair `#00a37d`/`#e64545` validated with the dataviz palette
+  checker against the dark surface; signed % text in every cell (never
+  color-alone).
+- Verified with a production build + live render: HTTP 200, all sections
+  populated, 28 DELAYED / 36 EOD / 2 LIVE badges on a Saturday (honest).
+- Note: the long-running local dev server (PID 86952, since Jun 26) has stale
+  Alpaca keys in its process env — its API routes 401. Restart it to fix.
+
+## Previous PR (11.6) — instrument model
 
 Parser util, NOT new DB columns — `instrument TEXT` stays canonical; structure
 derived on read; 100% backward compatible with existing opportunity rows.

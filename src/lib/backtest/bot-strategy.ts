@@ -27,6 +27,41 @@ export const FIBO_OTE_LOW      = 0.62
 export const FIBO_OTE_HIGH     = 0.79
 export const FIBO_TOLERANCE    = 0.035
 
+// ── Tunable strategy parameters (12.6) ───────────────────────
+// checkBotSignal defaults to DEFAULT_PARAMS (identical to the consts above,
+// i.e. exact bot.py behavior); the adjustable backtester passes overrides.
+export interface StrategyParams {
+  takeProfitPct: number
+  maxStopRiskPct: number
+  minRR: number
+  minEntryPrice: number
+  rsiMin: number
+  rsiMax: number
+  volumeMultiplier: number
+  emaFast: number
+  emaSlow: number
+  atrMinPct: number
+  requireSpyAlignment: boolean
+  minReversalConfluences: number     // of IFVG/BOS/OTE (bot.py: 2)
+  minContinuationConfluences: number // of FVG/EQ/OB/Breaker (bot.py: 1)
+}
+
+export const DEFAULT_PARAMS: StrategyParams = {
+  takeProfitPct: TAKE_PROFIT_PCT,
+  maxStopRiskPct: MAX_STOP_RISK_PCT,
+  minRR: MIN_RR_RATIO,
+  minEntryPrice: MIN_ENTRY_PRICE,
+  rsiMin: RSI_MIN,
+  rsiMax: RSI_MAX,
+  volumeMultiplier: VOLUME_MULTIPLIER,
+  emaFast: EMA_FAST,
+  emaSlow: EMA_SLOW,
+  atrMinPct: ATR_MIN_PCT,
+  requireSpyAlignment: true,
+  minReversalConfluences: 2,
+  minContinuationConfluences: 1,
+}
+
 export interface Bar { t: string; o: number; h: number; l: number; c: number; v: number }
 
 export interface BotSignal {
@@ -294,29 +329,30 @@ export function checkBotSignal(
   dailyBars: Bar[],
   spyBars: Bar[],
   i: number,
-  symbol: string
+  symbol: string,
+  p: StrategyParams = DEFAULT_PARAMS
 ): BotSignal | null {
   if (i < 35) return null
   const bar = bars15m[i]
   const price = bar.c
-  if (price < MIN_ENTRY_PRICE) return null
+  if (price < p.minEntryPrice) return null
 
   const slicedBars = bars15m.slice(0, i + 1)
   const closes  = slicedBars.map(b => b.c)
   const volumes = slicedBars.map(b => b.v)
 
   const rsi = calcRSI(closes)
-  if (rsi < RSI_MIN || rsi > RSI_MAX) return null
+  if (rsi < p.rsiMin || rsi > p.rsiMax) return null
 
-  const emaFast = calcEMA(closes, EMA_FAST).slice(-1)[0]
-  const emaSlow = calcEMA(closes, EMA_SLOW).slice(-1)[0]
+  const emaFast = calcEMA(closes, p.emaFast).slice(-1)[0]
+  const emaSlow = calcEMA(closes, p.emaSlow).slice(-1)[0]
   if (isNaN(emaFast) || isNaN(emaSlow)) return null
 
   const volMA = calcVolMA(volumes).slice(-1)[0]
-  if (isNaN(volMA) || bar.v < volMA * VOLUME_MULTIPLIER) return null
+  if (isNaN(volMA) || bar.v < volMA * p.volumeMultiplier) return null
 
   const atr = calcATR(slicedBars).slice(-1)[0]
-  if (isNaN(atr) || atr / price < ATR_MIN_PCT) return null
+  if (isNaN(atr) || atr / price < p.atrMinPct) return null
 
   const bodyAvg = calcBodyAvg(slicedBars).slice(-1)[0]
   const body = Math.abs(bar.c - bar.o)
@@ -327,7 +363,7 @@ export function checkBotSignal(
   const { bias, dol, rh, rl } = biasData
 
   const spyTrend = getSpyTrend(spyBars, bar.t)
-  if (spyTrend !== 'neutral' && spyTrend !== bias) return null
+  if (p.requireSpyAlignment && spyTrend !== 'neutral' && spyTrend !== bias) return null
 
   // 15m candle confirmation (previous bar closes in bias direction)
   if (i > 0) {
@@ -346,7 +382,7 @@ export function checkBotSignal(
   const ifvgOk = findIFVG(window, price, bias)
   const bosOk  = detectBOS(window, price, bias)
   const oteOk  = checkOTE(swLow, swHigh, price, bias)
-  if ([ifvgOk, bosOk, oteOk].filter(Boolean).length < 2) return null
+  if ([ifvgOk, bosOk, oteOk].filter(Boolean).length < p.minReversalConfluences) return null
 
   const revTags: string[] = []
   if (ifvgOk) revTags.push('IFVG')
@@ -358,7 +394,7 @@ export function checkBotSignal(
   const eqOk      = checkEquilibrium(rh, rl, price)
   const obOk      = findOrderBlock(window, bias).length > 0
   const breakerOk = findBreaker(window, price, bias)
-  if (![fvgOk, eqOk, obOk, breakerOk].some(Boolean)) return null
+  if ([fvgOk, eqOk, obOk, breakerOk].filter(Boolean).length < p.minContinuationConfluences) return null
 
   const contTags: string[] = []
   if (fvgOk)     contTags.push('FVG')
@@ -375,15 +411,15 @@ export function checkBotSignal(
   // Structure-based stop (bot.py: nearest opposite order block)
   const sl = getStructureStop(window, price, bias)
   const slDist = Math.abs(price - sl)
-  if (slDist / price > MAX_STOP_RISK_PCT) return null
+  if (slDist / price > p.maxStopRiskPct) return null
 
   // TP: use DOL if far enough, else fixed pct
   const tp = bias === 'bullish'
-    ? (dol > price * (1 + TAKE_PROFIT_PCT * 0.5) ? dol : price * (1 + TAKE_PROFIT_PCT))
-    : (dol < price * (1 - TAKE_PROFIT_PCT * 0.5) ? dol : price * (1 - TAKE_PROFIT_PCT))
+    ? (dol > price * (1 + p.takeProfitPct * 0.5) ? dol : price * (1 + p.takeProfitPct))
+    : (dol < price * (1 - p.takeProfitPct * 0.5) ? dol : price * (1 - p.takeProfitPct))
 
   const tpDist = Math.abs(tp - price)
-  if (slDist <= 0 || tpDist / slDist < MIN_RR_RATIO) return null
+  if (slDist <= 0 || tpDist / slDist < p.minRR) return null
 
   return {
     symbol, bias, price,

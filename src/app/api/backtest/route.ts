@@ -1,10 +1,12 @@
 import { db } from "@/lib/db/client"
 import { runWalkForward } from "@/lib/validation/walk-forward"
 import { getBars } from "@/lib/data/alpaca"
-import { UNIVERSE, checkBotSignal, TAKE_PROFIT_PCT, MAX_STOP_RISK_PCT } from "@/lib/backtest/bot-strategy"
+import { checkBotSignal, DEFAULT_PARAMS, type StrategyParams } from "@/lib/backtest/bot-strategy"
+import { getActiveUniverse } from "@/lib/universe/store"
 
-const MAX_HOLD_BARS = 20  // ~5 hours on 15m
+const DEFAULT_MAX_HOLD_BARS = 20  // ~5 hours on 15m
 const RISK_PER_TRADE = 100  // $100 notional risk per trade for PnL display
+const DEFAULT_SYMBOL_COUNT = 30   // universe top-N when no custom symbols given
 
 interface SimTrade {
   instrument: string
@@ -68,7 +70,9 @@ function inMemoryWalkForward(trades: SimTrade[], trainMonths = 2, testMonths = 1
 // ── Historical simulation for one symbol using exact bot.py logic ──
 async function simulateSymbol(
   symbol: string,
-  spyBars: ReturnType<typeof getBars> extends Promise<infer T> ? T : never
+  spyBars: ReturnType<typeof getBars> extends Promise<infer T> ? T : never,
+  p: StrategyParams = DEFAULT_PARAMS,
+  maxHoldBars = DEFAULT_MAX_HOLD_BARS,
 ): Promise<SimTrade[]> {
   const [bars15m, dailyBars] = await Promise.all([
     getBars(symbol, '15Min', 2000, 180).catch(() => [] as Awaited<ReturnType<typeof getBars>>),
@@ -80,10 +84,10 @@ async function simulateSymbol(
   const trades: SimTrade[] = []
   let skipUntil = 0
 
-  for (let i = 35; i < bars15m.length - MAX_HOLD_BARS; i++) {
+  for (let i = 35; i < bars15m.length - maxHoldBars; i++) {
     if (i < skipUntil) continue
 
-    const signal = checkBotSignal(bars15m, dailyBars, spyBars, i, symbol)
+    const signal = checkBotSignal(bars15m, dailyBars, spyBars, i, symbol, p)
     if (!signal) continue
 
     // Enter at next bar's open
@@ -91,23 +95,23 @@ async function simulateSymbol(
     if (!entryBar) continue
     const entry = entryBar.o
     const sl    = signal.bias === 'bullish'
-      ? entry * (1 - MAX_STOP_RISK_PCT)
-      : entry * (1 + MAX_STOP_RISK_PCT)
+      ? entry * (1 - p.maxStopRiskPct)
+      : entry * (1 + p.maxStopRiskPct)
     const tp = signal.tp
 
     let r_multiple = 0
     let exitIdx    = i + 1
     let exited     = false
 
-    for (let j = i + 1; j < Math.min(i + 1 + MAX_HOLD_BARS, bars15m.length); j++) {
+    for (let j = i + 1; j < Math.min(i + 1 + maxHoldBars, bars15m.length); j++) {
       const bar = bars15m[j]
       exitIdx = j
       if (signal.bias === 'bullish') {
         if (bar.l <= sl) { r_multiple = -1;                    exited = true; break }
-        if (bar.h >= tp) { r_multiple = TAKE_PROFIT_PCT / MAX_STOP_RISK_PCT; exited = true; break }
+        if (bar.h >= tp) { r_multiple = p.takeProfitPct / p.maxStopRiskPct; exited = true; break }
       } else {
         if (bar.h >= sl) { r_multiple = -1;                    exited = true; break }
-        if (bar.l <= tp) { r_multiple = TAKE_PROFIT_PCT / MAX_STOP_RISK_PCT; exited = true; break }
+        if (bar.l <= tp) { r_multiple = p.takeProfitPct / p.maxStopRiskPct; exited = true; break }
       }
     }
     if (!exited) continue
@@ -130,22 +134,35 @@ async function simulateSymbol(
 
 // ── POST: walk-forward (live DB trades first, sim fallback) ───
 export async function POST(req: Request) {
-  const { strategyId } = await req.json()
+  const body = await req.json()
+  const { strategyId } = body
   if (!strategyId) return Response.json({ error: 'strategyId required' }, { status: 400 })
 
+  // Adjustable backtest (12.6): callers may override any strategy param,
+  // the symbol list, and max hold bars. Missing fields = exact bot.py logic.
+  const params: StrategyParams = { ...DEFAULT_PARAMS, ...(body.params ?? {}) }
+  const maxHoldBars = Math.min(Math.max(Number(body.maxHoldBars ?? DEFAULT_MAX_HOLD_BARS), 2), 100)
+  const custom = body.params || body.symbols || body.maxHoldBars
+
   try {
-    // Prefer real live trades if they exist
-    const dbResult = await runWalkForward(strategyId).catch(() => null)
-    if (dbResult && dbResult.windows.length > 0) {
-      return Response.json({ ok: true, result: dbResult, source: 'live' })
+    // Prefer real live trades if they exist — but only for the untouched strategy
+    if (!custom) {
+      const dbResult = await runWalkForward(strategyId).catch(() => null)
+      if (dbResult && dbResult.windows.length > 0) {
+        return Response.json({ ok: true, result: dbResult, source: 'live' })
+      }
     }
 
     // No live data yet — run full historical simulation using exact bot.py logic
     // Fetch SPY bars once, shared across all symbol sims for the trend filter
     const spyBars = await getBars('SPY', '15Min', 2000, 180).catch(() => [] as Awaited<ReturnType<typeof getBars>>)
 
+    const symbols: string[] = Array.isArray(body.symbols) && body.symbols.length
+      ? body.symbols.map((x: string) => String(x).toUpperCase()).slice(0, 50)
+      : await getActiveUniverse(DEFAULT_SYMBOL_COUNT)
+
     const symbolResults = await Promise.all(
-      UNIVERSE.map(sym => simulateSymbol(sym, spyBars).catch(() => [] as SimTrade[]))
+      symbols.map(sym => simulateSymbol(sym, spyBars, params, maxHoldBars).catch(() => [] as SimTrade[]))
     )
 
     const allTrades = symbolResults
@@ -163,7 +180,7 @@ export async function POST(req: Request) {
     const wins = allTrades.filter(t => t.r_multiple > 0).length
     return Response.json({
       ok: true, result, trades: allTrades, source: 'sim',
-      message: `${allTrades.length} simulated trades (${wins}W/${allTrades.length - wins}L) · exact bot.py logic · ${UNIVERSE.length} symbols · 15m bars`,
+      message: `${allTrades.length} simulated trades (${wins}W/${allTrades.length - wins}L) · ${custom ? 'custom params' : 'exact bot.py logic'} · ${symbols.length} symbols · 15m bars`,
     })
 
   } catch (err) {

@@ -1,7 +1,9 @@
 import { safeFetch } from "@/lib/sandbox/whitelist"
 
 export type ModelFamily = "llama" | "qwen" | "deepseek" | "mistral" | "gemma"
-export type ProviderName = "groq" | "cerebras" | "sambanova" | "openrouter" | "cloudflare"
+// SambaNova removed 2026-07-05: one-time $5 credit (not a renewable free
+// tier) and it never had a callProvider case — dead weight in the chain.
+export type ProviderName = "groq" | "cerebras" | "openrouter" | "cloudflare"
 
 export interface ModelSpec {
   provider: ProviderName
@@ -10,9 +12,22 @@ export interface ModelSpec {
   contextWindow: number
   dailyQuota: number
   rpm: number
+  /** Lower = tried earlier. Explicit so candidate order never depends on
+   *  object-declaration order. Cerebras first: 1M tokens/day free vs
+   *  Groq's ~1K requests/day. */
+  priority: number
 }
 
 export const MODELS: Record<string, ModelSpec> = {
+  "cerebras-llama-70b": {
+    provider: "cerebras",
+    modelId: "llama-3.3-70b",
+    family: "llama",
+    contextWindow: 128000,
+    dailyQuota: 1000000,
+    rpm: 30,
+    priority: 1,
+  },
   "groq-llama-70b": {
     provider: "groq",
     modelId: "llama-3.3-70b-versatile",
@@ -20,6 +35,7 @@ export const MODELS: Record<string, ModelSpec> = {
     contextWindow: 128000,
     dailyQuota: 500000,
     rpm: 30,
+    priority: 2,
   },
   "groq-llama-8b": {
     provider: "groq",
@@ -28,14 +44,7 @@ export const MODELS: Record<string, ModelSpec> = {
     contextWindow: 128000,
     dailyQuota: 500000,
     rpm: 30,
-  },
-  "cerebras-llama-70b": {
-    provider: "cerebras",
-    modelId: "llama-3.3-70b",
-    family: "llama",
-    contextWindow: 128000,
-    dailyQuota: 1000000,
-    rpm: 30,
+    priority: 3,
   },
   "cerebras-qwen-32b": {
     provider: "cerebras",
@@ -44,6 +53,7 @@ export const MODELS: Record<string, ModelSpec> = {
     contextWindow: 32000,
     dailyQuota: 1000000,
     rpm: 30,
+    priority: 4,
   },
   "openrouter-deepseek-r1": {
     provider: "openrouter",
@@ -52,7 +62,13 @@ export const MODELS: Record<string, ModelSpec> = {
     contextWindow: 64000,
     dailyQuota: 200,
     rpm: 10,
+    priority: 5,
   },
+}
+
+/** MODELS entries sorted by explicit priority (lowest first). */
+export function modelsByPriority(): [string, ModelSpec][] {
+  return Object.entries(MODELS).sort((a, b) => a[1].priority - b[1].priority)
 }
 
 export type ProviderRequest = {

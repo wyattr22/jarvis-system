@@ -26,7 +26,6 @@ const ALLOWED_HOSTS = new Set<string>([
   // LLM compute
   "api.groq.com",
   "api.cerebras.ai",
-  "api.sambanova.ai",
   "openrouter.ai",
   // TTS compute
   "api.elevenlabs.io",

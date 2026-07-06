@@ -1,5 +1,5 @@
 import { redis } from "@/lib/cache/redis"
-import { callProvider, MODELS, type ModelSpec, type ModelFamily } from "./providers"
+import { callProvider, MODELS, modelsByPriority, type ModelSpec, type ModelFamily } from "./providers"
 
 const QUOTA_PREFIX = "llm:quota:"
 const CACHE_PREFIX = "llm:cache:"
@@ -64,7 +64,7 @@ export async function route(req: RouterRequest): Promise<string> {
 }
 
 function buildCandidates(preferredModel?: string, requiredFamily?: ModelFamily): [string, ModelSpec][] {
-  const all = Object.entries(MODELS)
+  const all = modelsByPriority()
 
   if (preferredModel && MODELS[preferredModel]) {
     const preferred = MODELS[preferredModel]

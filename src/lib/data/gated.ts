@@ -45,7 +45,7 @@ export const getSentimentGated = (symbol: string): Promise<SourceResult<TickerSe
   evaluateSource("stocktwits.sentiment", () => rawGetSentiment(symbol))
 
 export const getOptionsGated = (symbol: string): Promise<SourceResult<OptionsSnapshot | null>> =>
-  evaluateSource("yahoo.options", () => rawGetOptions(symbol))
+  evaluateSource("options.snapshot", () => rawGetOptions(symbol))
 
 export const getIntermarketGated = (): Promise<SourceResult<IntermarketSnapshot>> =>
   evaluateSource("yahoo.intermarket", () => rawGetIntermarket())

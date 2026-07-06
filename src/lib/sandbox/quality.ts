@@ -181,6 +181,14 @@ function scoreConfidence(spec: SourceSpec, validationOk: boolean, fetchAgeMs: nu
   return Math.min(1, Math.max(0, score))
 }
 
+// Test-only helpers — DO NOT call from production code.
+// Exposed so vitest can verify the pure math without spinning up a DB.
+export const _testHelpers = {
+  scoreConfidence,
+  passRate,
+  recordOutcome,
+}
+
 export async function evaluateSource<T>(
   name: string,
   fetcher: () => Promise<T>,

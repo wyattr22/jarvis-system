@@ -21,6 +21,7 @@ import { saveMemory } from "@/lib/memory/store"
 import { ingestResearch, searchResearch } from "@/lib/research/store"
 import { recordTurn, checkAndApplyCorrection } from "@/lib/learning/corrections"
 import { maybeSetupStats } from "@/lib/learning/setup-stats"
+import { getOpportunitiesContextLine } from "@/lib/learning/opportunities-summary"
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -345,6 +346,9 @@ const PAGE_MAP: Record<string, string> = {
   features: '/features', feature: '/features',
   bot: '/bot', bots: '/bot', 'trading bot': '/bot',
   meta: '/meta-decisions', 'meta agent': '/meta-decisions', 'meta decisions': '/meta-decisions',
+  opportunities: '/opportunities', opportunity: '/opportunities', 'opp feed': '/opportunities',
+  allocator: '/allocator', allocate: '/allocator', allocation: '/allocator', 'risk plan': '/allocator',
+  sources: '/source-quality', 'source quality': '/source-quality', 'quality gate': '/source-quality',
 }
 
 // TF values must match the label field in charts/page.tsx TIMEFRAMES array
@@ -629,11 +633,12 @@ export async function POST(req: Request) {
   const contextTimeout = <T>(p: Promise<T>, fallback: T): Promise<T> =>
     Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 12000))])
 
-  const [context, memories, research, setupStats] = await Promise.all([
+  const [context, memories, research, setupStats, oppsLine] = await Promise.all([
     (casual || navOnly) ? Promise.resolve(null) : contextTimeout(buildContextCached(tickers), ''),
     navOnly ? Promise.resolve([]) : contextTimeout(getRelevantMemories(tickers, query).catch(() => []), []),
     (casual || navOnly) ? Promise.resolve('') : contextTimeout(searchResearch(query).catch(() => ''), ''),
     (casual || navOnly) ? Promise.resolve('') : maybeSetupStats(query).catch(() => ''),
+    (casual || navOnly) ? Promise.resolve('') : getOpportunitiesContextLine().catch(() => ''),
   ])
   const memoryBlock = await formatMemoriesForContext(memories)
 
@@ -690,6 +695,7 @@ ${fileContent ? `\n\nFILE CONTEXT — ${fileName ?? 'attachment'}:\n${(fileConte
 ${memoryBlock}
 ${research ? `\n${research}` : ''}
 ${setupStats ? `\n${setupStats}` : ''}
+${oppsLine ? `\n${oppsLine}` : ''}
 ${tradeOrder ? `\nTRADE ORDER PENDING: The user wants to ${tradeOrder.qty === 0 ? (tradeOrder.symbol === 'ALL' ? 'close ALL positions' : `close their ${tradeOrder.symbol} position`) : `${tradeOrder.side} ${tradeOrder.qty} shares of ${tradeOrder.symbol}`}. Respond with a SINGLE spoken sentence verbally confirming the exact details and instructing them to say "confirm" to execute or "cancel" to abort. Do not execute anything yourself.` : ''}`
 
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [

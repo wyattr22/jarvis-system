@@ -25,8 +25,8 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | Step | Branch | Status |
 |---|---|---|
 | 11.0 | (no PR) sync main — **PR #58 landed the 57-PR stack on main**; local main synced; baseline green (89 tests) | ✅ done |
-| 11.1 | phase-11.1/env-audit-housekeeping | ✅ this PR |
-| 11.2 | phase-11.2/quote-freshness-core | queued |
+| 11.1 | phase-11.1/env-audit-housekeeping | ✅ merged (#59) |
+| 11.2 | phase-11.2/quote-freshness-core | ✅ this PR |
 | 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — not yet added) | queued |
 | 11.4 | phase-11.4/alpaca-options-chain | queued |
 | 11.5 | phase-11.5/futures-indexes-catalog | queued |
@@ -36,16 +36,26 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.1)
+## This PR (11.2) — quote freshness core
 
-- `.env.example` now documents every env var referenced in src/ or deployed
-  (was missing ALPHA_VANTAGE_KEY, CRON_SECRET, VAPID_*, ELEVENLABS_*, etc.)
-- `providers.ts`: `requireKey()` guard in every provider call — throws before
-  any network I/O when the key is missing. Fixes the silent-401 OpenRouter bug
-  (key registered in MODELS but never deployed → every fallback pass wasted an
-  attempt on `Authorization: Bearer undefined`).
-- `pnpm-workspace.yaml`: replaced literal placeholder string
-  `protobufjs: set this to true or false` with `false` (local installs errored).
+The metadata contract every Phase 11 surface conforms to:
+
+- `src/lib/data/freshness.ts` — `QuoteMeta {source, asOf, delaySeconds,
+  realtime}`, `MarketQuote`, `SOURCE_DELAYS` registry, `freshnessOf()`
+  classifier (realtime/delayed/eod, computed from actual asOf age, not just
+  nominal feed delay).
+- `src/lib/data/budget.ts` — Redis fixed-window budgeter with safety margins
+  under each free-tier cap (finnhub 55/min, alphavantage 22/day,
+  alpaca_data 180/min, yahoo 120/min self-imposed). Fails open on Redis error.
+- `src/lib/data/quote-cache.ts` — `cachedQuote()` = cache → budget check →
+  fetch, with a 24h stale shadow copy so provider outages/over-budget degrade
+  to "stale + badge" instead of blanking pages.
+- `alpaca.ts` — additive `getMarketQuotes()` + exported pure
+  `mapSnapshotToMarketQuote()` (changePct from prevDailyBar). Legacy `Quote`
+  shape untouched.
+
+19 new tests (freshness boundaries, budget windows/rollover/fail-open,
+cache/shadow/stale paths).
 
 ## Important discovery (11.0)
 

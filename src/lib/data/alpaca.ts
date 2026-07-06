@@ -1,4 +1,5 @@
 import { safeFetch } from "@/lib/sandbox/whitelist"
+import { metaFor, type MarketQuote } from "./freshness"
 
 const BASE = "https://data.alpaca.markets/v2"
 const TRADE_BASE = process.env.ALPACA_PAPER === "true"
@@ -88,6 +89,48 @@ export async function getMultipleQuotes(symbols: string[]): Promise<Quote[]> {
       timestamp: snap.latestTrade?.t ?? snap.latestQuote?.t ?? '',
     }
   })
+}
+
+// MarketQuote variant with freshness metadata (Phase 11). Additive — the
+// legacy Quote shape above stays untouched for existing consumers.
+export async function getMarketQuotes(symbols: string[]): Promise<MarketQuote[]> {
+  if (!symbols.length) return []
+  const url = `${BASE}/stocks/snapshots?symbols=${encodeURIComponent(symbols.join(','))}&feed=iex`
+  const res = await safeFetch(url, { headers: headers(), cache: "no-store", signal: AbortSignal.timeout(8000) })
+  if (!res.ok) throw new Error(`Alpaca batch snapshot error: ${res.status}`)
+  const json = await res.json()
+  return symbols.flatMap(symbol => {
+    const snap = json[symbol]
+    if (!snap) return []
+    return [mapSnapshotToMarketQuote(symbol, snap)]
+  })
+}
+
+// Exported for tests — pure mapper from an Alpaca snapshot payload.
+export function mapSnapshotToMarketQuote(
+  symbol: string,
+  snap: {
+    latestTrade?: { p?: number; t?: string }
+    latestQuote?: { bp?: number; ap?: number; t?: string }
+    prevDailyBar?: { c?: number }
+  },
+): MarketQuote {
+  const tradePrice = snap.latestTrade?.p ?? 0
+  const bid = snap.latestQuote?.bp ?? tradePrice
+  const ask = snap.latestQuote?.ap ?? tradePrice
+  const price = tradePrice > 0 ? tradePrice : (bid + ask) / 2
+  const prevClose = snap.prevDailyBar?.c
+  const changePct = prevClose && prevClose > 0 && price > 0
+    ? ((price - prevClose) / prevClose) * 100
+    : null
+  return {
+    symbol,
+    price,
+    changePct,
+    bid,
+    ask,
+    meta: metaFor("alpaca.iex", snap.latestTrade?.t ?? snap.latestQuote?.t ?? ""),
+  }
 }
 
 export async function getPositions() {

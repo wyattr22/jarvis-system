@@ -9,7 +9,21 @@ export interface EarningsItem {
   currency: string
 }
 
+/**
+ * Earnings calendar dispatcher (11.3): Finnhub primary (60 req/min free
+ * tier), Alpha Vantage fallback (now only 25 req/day free — the old
+ * 1h-revalidate schedule alone could exceed it).
+ */
 export async function getEarningsCalendar(): Promise<EarningsItem[]> {
+  const { getFinnhubEarnings, hasFinnhubKey } = await import("./finnhub")
+  if (hasFinnhubKey()) {
+    const finnhub = await getFinnhubEarnings()
+    if (finnhub.length) return finnhub
+  }
+  return getAlphaVantageEarnings()
+}
+
+async function getAlphaVantageEarnings(): Promise<EarningsItem[]> {
   const key = process.env.ALPHA_VANTAGE_KEY
   if (!key) return []
 

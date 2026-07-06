@@ -27,7 +27,7 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.0 | (no PR) sync main — **PR #58 landed the 57-PR stack on main**; local main synced; baseline green (89 tests) | ✅ done |
 | 11.1 | phase-11.1/env-audit-housekeeping | ✅ merged (#59) |
 | 11.2 | phase-11.2/quote-freshness-core | ✅ merged (#60) |
-| 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — **still not added**) | queued |
+| 11.3 | phase-11.3/finnhub-provider — key deployed 2026-07-06; **Finnhub free tier paywalls ALL forex** (probed), so forex stays Yahoo `PAIR=X` and Finnhub covers earnings + quotes + search | ✅ this PR |
 | 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ merged (#61) |
 | 11.5 | phase-11.5/futures-indexes-catalog | ✅ merged (#62) |
 | 11.6 | phase-11.6/instrument-model | ✅ merged (#63) |
@@ -37,7 +37,29 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.10 | phase-11.10/mcp-markets-tool | ✅ merged (#67) |
 | 11.11 | phase-11.11/hobby-cron-compliance — Vercel Hobby rejects sub-daily crons; 4 schedules downgraded to daily (see KNOWN_ISSUES for the free external-pinger recipe) | ✅ this PR |
 
-## This PR (11.10) — MCP markets tools
+## This PR (11.3) — Finnhub provider (revised scope)
+
+Probed the live key before building: Finnhub free tier now **paywalls all
+forex endpoints** (`/forex/rates`, per-pair quotes, candles all 403). What
+still works free: `/quote` (real-time US equities), `/calendar/earnings`,
+`/search`. Scope revised accordingly:
+
+- `finnhub.ts`: `getFinnhubQuote` (MarketQuote, realtime meta),
+  `getFinnhubEarnings` (mapped to legacy EarningsItem, 1h Redis cache),
+  `searchFinnhubSymbols`. All budgeted (55/min) via 11.2 infra.
+- `earnings.ts`: dispatcher — Finnhub primary, Alpha Vantage fallback.
+  Fixes the AV 25/day budget breach. `economics.ts` revalidate 1h→2h
+  (12 AV calls/day).
+- `/markets` forex grid ACTIVATED with Yahoo `PAIR=X` majors (8 pairs,
+  honest DELAYED badges) — was a setup placeholder.
+- Symbol search: Finnhub fallback when the universe index returns <3 hits.
+- whitelist +finnhub.io; quality specs finnhub.quote/finnhub.earnings.
+- Live-verified: AAPL 308.63 realtime via finnhub.quote; earnings dispatcher
+  returned 297 Finnhub rows.
+
+**Phase 11 is now COMPLETE (11.0–11.12; Oanda step remains optional/deferred).**
+
+## Previous PR (11.10) — MCP markets tools
 
 - `markets.overview` — the /markets aggregate (indexes, futures+proxies,
   macro, sectors, movers, SPY options pulse) with `meta` freshness on every

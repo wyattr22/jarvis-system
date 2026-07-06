@@ -15,8 +15,9 @@ safety margin; over-budget requests serve the 24h stale-shadow copy
 | Alpaca options (indicative + contracts) | part of data quota | — (request-time) | ~4 req per options-pulse render, cached | large | Yahoo options scrape |
 | Alpaca /v2/assets universe | trading API, generous | — (24h Redis cache) | 1/day | huge | catalog-only search |
 | Yahoo Finance (unofficial) | no SLA — politeness | 120/min | futures 11 + indexes 7 per 60s TTL ≈ 18/min cold | ~6× | stale shadow → ETF proxies |
-| Finnhub (pending key) | 60 req/min | 55/min | forex 1 call/15s = 4/min + earnings 1/hr + search ad-hoc | ~10× | Yahoo `PAIR=X` |
-| Alpha Vantage | **25 req/day** (dropped from 500) | 22/day | economics at 2h TTL = 12/day (earnings migrating to Finnhub in 11.3) | ~2× | cached/empty calendar |
+| Finnhub | 60 req/min | 55/min | earnings 1/hr + equity quote/search ad-hoc | ~10× | AV earnings; Alpaca quotes. **ALL forex endpoints paywalled on free tier (probed 2026-07-05 with the live key)** |
+| Yahoo forex `PAIR=X` | no SLA — politeness | shares yahoo 120/min | 8 majors per 60s TTL | large | stale shadow. Primary forex source since Finnhub free has none |
+| Alpha Vantage | **25 req/day** (dropped from 500) | 22/day | economics at 2h TTL = 12/day (earnings migrated to Finnhub in 11.3) | ~2× | cached/empty calendar |
 | StockTwits | ~200 req/hr | — (5min revalidate) | per-symbol context calls | ok | skip sentiment |
 | SEC EDGAR | fair use | — (1h revalidate) | insider checks | ok | skip |
 

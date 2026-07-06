@@ -17,7 +17,7 @@ export async function getTodaysEconomicEvents(): Promise<EconomicEvent[]> {
     const res = await safeFetch(
       `https://www.alphavantage.co/query?function=ECONOMIC_CALENDAR&horizon=3month&apikey=${key}`,
       {
-        next: { revalidate: 3600 },
+        next: { revalidate: 7200 }, // 12 AV calls/day — safe inside the 25/day free cap
         signal: AbortSignal.timeout(5000),
       }
     )

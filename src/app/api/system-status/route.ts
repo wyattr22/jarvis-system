@@ -19,7 +19,6 @@ type CronCheck = {
 
 const CRON_EXPECTED_HOURS: Record<string, number> = {
   "/api/features/compute":            24,
-  "/api/drift/check":                 24,
   "/api/council/orchestrate":         7 * 24,
   "/api/brief/generate":              24,
   "/api/sync/fills":                  24,

@@ -5,10 +5,6 @@
       "schedule": "30 20 * * 1-5"
     },
     {
-      "path": "/api/drift/check",
-      "schedule": "0 21 * * 1-5"
-    },
-    {
       "path": "/api/council/orchestrate",
       "schedule": "0 18 * * 0"
     },

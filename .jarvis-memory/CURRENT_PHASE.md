@@ -12,8 +12,8 @@
 | 12.4 | Internal signal engine over the universe | ✅ merged (#74) |
 | 12.5 | Features: live compute any symbol | ✅ merged (#75) |
 | 12.8 | Auto-execute loop (done out of order — highest user value): signal→opportunity promotion + auto cycle behind `auto_execute` master switch (default OFF, /risk-config), market-hours gate, Risk-Manager veto, ≤3 orders/cycle, `/api/execution/auto-cycle` pinger endpoint, AUTO-EXECUTE badge on /bot. Pinger recipe in domain/api-budgets.md | ✅ this PR |
-| 12.6 | Adjustable backtest: StrategyParams threaded through checkBotSignal (defaults = exact bot.py), route accepts params/symbols/maxHoldBars, STRATEGY BUILDER panel on /backtest, default universe = scan top 30 | ✅ this PR |
-| 12.7 | Shadow vs live comparison engine | queued |
+| 12.6 | Adjustable backtest (strategy builder) | ✅ merged (#77) |
+| 12.7 | Shadow vs live: simulateSignalOutcome against real bars for EVERY signal vs executed trades; /api/analysis/shadow; panel on /experiments with validated 2-series curve + UNEXECUTED R stat | ✅ this PR |
 | 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |
 | 12.9 | Council transparency — persist + render deliberation | queued |
 | 12.10 | Humanize meta-decisions + audit log | queued |

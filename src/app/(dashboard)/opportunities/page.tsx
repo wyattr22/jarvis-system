@@ -1,6 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { parseInstrument } from "@/lib/instruments/parse"
+import { formatInstrument } from "@/lib/instruments/format"
+import type { AssetClass } from "@/lib/brokers/adapter"
+
+// Human-readable instrument for non-equity asset classes
+// ("SPY 18 Jul '25 $550 Call" instead of "SPY250718C00550000").
+function displayInstrument(instrument: string, assetClass: string): string {
+  if (assetClass === "equity" || assetClass === "crypto") return instrument
+  return formatInstrument(parseInstrument(instrument, assetClass as AssetClass))
+}
 
 type Opportunity = {
   id: string
@@ -145,7 +155,7 @@ export default function OpportunitiesPage() {
                 <td style={td}>
                   <span style={{ color: SOURCE_COLORS[o.source] ?? "#e5e7eb" }}>{o.source}</span>
                 </td>
-                <td style={td}><b>{o.instrument}</b> <span style={{ color: "#6b7280" }}>{o.asset_class}</span></td>
+                <td style={td} title={o.instrument}><b>{displayInstrument(o.instrument, o.asset_class)}</b> <span style={{ color: "#6b7280" }}>{o.asset_class}</span></td>
                 <td style={td}>
                   <span style={{ color: o.side === "long" ? "#00d4a1" : "#ff5c5c" }}>{o.side}</span>
                 </td>

@@ -8,8 +8,8 @@
 |---|---|---|
 | 12.1 | Markets tiles → TradingView chart popup (modal + tv-symbol mapping) | ✅ merged (#71) |
 | 12.2 | Remove drift monitor | ✅ merged (#72) |
-| 12.3 | Whole-market scanner → rotating universe. Live-verified: 12,659 symbols in 35s, 1,408 passed filters, top 150 stored. features/compute now reads top 50 of scan_universe (LEGACY_UNIVERSE fallback). Daily pre-market cron | ✅ this PR |
-| 12.4 | Internal signal engine over the universe (pinger-driven) | queued |
+| 12.3 | Whole-market scanner → rotating universe (12,659 symbols/35s live-verified) | ✅ merged (#73) |
+| 12.4 | Internal signal engine: smc-ict-v4 over universe top-50, 3 batch calls/sweep, 4h per-symbol cooldown, /api/signals/scan pinger endpoint + daily cron fallback | ✅ this PR |
 | 12.5 | Feature library: any stock, live on-demand compute | queued |
 | 12.6 | Adjustable backtest (build-your-own strategy params) | queued |
 | 12.7 | Shadow vs live comparison engine | queued |

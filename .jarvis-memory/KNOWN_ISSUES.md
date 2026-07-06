@@ -18,3 +18,8 @@ Append open items here. Close them out with a strike-through + date when fixed.
 
 - **Lint config not tuned** — `next lint` in CI is currently `|| true`.
   Need a follow-up PR to fix any real issues and flip to hard-fail.
+
+- **`domain/mcp-tool-catalog.md` referenced by INDEX.md but the file doesn't
+  exist.** The registry smoke test (`registry.test.ts`) is the real catalog
+  for now (22 tools after 11.10). Generate the doc from `listTools()` in a
+  future step.

@@ -32,11 +32,22 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.5 | phase-11.5/futures-indexes-catalog | ✅ merged (#62) |
 | 11.6 | phase-11.6/instrument-model | ✅ merged (#63) |
 | 11.7 | phase-11.7/markets-page | ✅ merged (#64) |
-| 11.8 | phase-11.8/watchlist-universe | ✅ this PR |
-| 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
+| 11.8 | phase-11.8/watchlist-universe | ✅ merged (#65) |
+| 11.9 | phase-11.9/llm-chain-and-api-audit | ✅ this PR |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.8) — watchlist universe + cross-asset search
+## This PR (11.9) — LLM chain reorder + API budget audit
+
+- `providers.ts`: explicit `priority` field; Cerebras-70b first (1M tok/day
+  free vs Groq ~1K req/day); router candidates sorted by it.
+- SambaNova fully removed: `ProviderName`, whitelist host, voice route's
+  direct call + round 3. **User: delete SAMBANOVA_API_KEY from Vercel.**
+- `domain/api-budgets.md` — the audit: every external API, free-tier cap,
+  worst-case demand, headroom, fallback, delay-honesty table + trading-impact
+  note. Linked from INDEX.md.
+- DECISIONS entry for the chain order.
+
+## Previous PR (11.8) — watchlist universe + cross-asset search
 
 - SSE stream (`/api/stream`) now reads symbols from the DB watchlist
   (re-read every ~60s, equities-only via `parseInstrument`, cap 25, legacy

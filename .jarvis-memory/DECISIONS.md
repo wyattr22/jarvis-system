@@ -173,3 +173,22 @@ real futures data budget ever appears (Databento etc.), swap `futures.ts`
 internals; consumers only see `MarketQuote`. Also fixed here: Yahoo's `^DXY`
 is dead (price=None since 2019) — dollar index must be `DX-Y.NYB`; the old
 intermarket `dxy` field had been silently null.
+
+---
+
+## 2026-07-05 — LLM chain: Cerebras-first, SambaNova removed, explicit priority
+
+**Context:** API-stack audit (Phase 11.9). Groq free tier = ~1K req/day;
+Cerebras = 1M tokens/day (most generous renewable). SambaNova's "free tier"
+is a one-time $5 credit, its key was deployed but had no `callProvider` case,
+and the OpenRouter key was never deployed (silent 401 per fallback pass,
+fixed in 11.1).
+
+**Decision:** `ModelSpec` gains an explicit `priority` field (declaration
+order was the implicit contract — fragile). Order: cerebras-70b → groq-70b →
+groq-8b → cerebras-qwen-32b → openrouter-deepseek-r1. SambaNova removed from
+`ProviderName`, the whitelist, and the voice route's direct call.
+
+**Consequences:** Full audit table lives in `domain/api-budgets.md`. User
+deletes `SAMBANOVA_API_KEY` from Vercel. If SambaNova ever ships a renewable
+free tier, re-add as a provider with a `callProvider` case this time.

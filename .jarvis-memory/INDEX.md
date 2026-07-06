@@ -28,6 +28,7 @@ you're trying to do. Don't re-derive context that's already documented.
 - [domain/architecture.md](domain/architecture.md) — high-level system map
 - [domain/mcp-tool-catalog.md](domain/mcp-tool-catalog.md) — every MCP tool with shape + scope
 - [domain/risk-config.md](domain/risk-config.md) — current risk caps + reasoning
+- [domain/api-budgets.md](domain/api-budgets.md) — free-tier API audit: caps, consumption, fallbacks, delay honesty
 
 ## Session journals (recent context)
 

@@ -752,21 +752,6 @@ ${tradeOrder ? `\nTRADE ORDER PENDING: The user wants to ${tradeOrder.qty === 0 
       return j.choices?.[0]?.message?.content ?? ''
     })
 
-    // SambaNova — free tier, no CC, fast Llama 70B, separate quota from Groq/Cerebras
-    const callSambaNova = () => attempt('SambaNova', async () => {
-      const key = process.env.SAMBANOVA_API_KEY
-      if (!key) throw new Error('no key')
-      const r = await safeFetch('https://api.sambanova.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: casual ? 'Meta-Llama-3.1-8B-Instruct' : 'Meta-Llama-3.3-70B-Instruct', max_tokens: maxTok, messages, temperature: temp }),
-        signal: AbortSignal.timeout(15000),
-      })
-      if (!r.ok) throw new Error(`${r.status}`)
-      const j = await r.json()
-      return j.choices?.[0]?.message?.content ?? ''
-    })
-
     // Round 1: Cerebras (fast, separate quota) + Groq 8B (30k TPM — 5× higher limit than 70B)
     // Using 8B as primary Groq because each Jarvis request is 5k+ tokens and 70B only allows
     // 6k tokens/minute — meaning ONE message exhausts the 70B quota for a full minute.
@@ -786,12 +771,9 @@ ${tradeOrder ? `\nTRADE ORDER PENDING: The user wants to ${tradeOrder.qty === 0 
     const r2 = round2.find(r => r !== null && r.length > 0)
     if (r2) return r2
 
-    // Round 3: SambaNova (separate free quota) + Gemma
-    const round3 = await Promise.all([
-      callSambaNova(),
-      callGroq('gemma2-9b-it'),
-    ])
-    const r3 = round3.find(r => r !== null && r.length > 0)
+    // Round 3: Gemma (separate Groq bucket). SambaNova removed 2026-07-05 —
+    // its free tier is a one-time $5 credit, not renewable.
+    const r3 = await callGroq('gemma2-9b-it')
     if (r3) return r3
 
     // Round 4: last resort — OpenRouter

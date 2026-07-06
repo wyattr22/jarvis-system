@@ -27,7 +27,7 @@ describe("isAllowedHost", () => {
   it("allows LLM compute providers", () => {
     expect(isAllowedHost("api.groq.com")).toBe(true)
     expect(isAllowedHost("api.cerebras.ai")).toBe(true)
-    expect(isAllowedHost("api.sambanova.ai")).toBe(true)
+    expect(isAllowedHost("api.sambanova.ai")).toBe(false) // removed 2026-07-05 (11.9)
     expect(isAllowedHost("openrouter.ai")).toBe(true)
   })
 

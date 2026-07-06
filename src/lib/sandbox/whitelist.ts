@@ -17,6 +17,7 @@ const ALLOWED_HOSTS = new Set<string>([
   "query1.finance.yahoo.com",
   "query2.finance.yahoo.com",
   "www.alphavantage.co",
+  "finnhub.io",
   // SEC + public filings
   "data.sec.gov",
   "efts.sec.gov",

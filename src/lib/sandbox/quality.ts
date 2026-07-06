@@ -133,6 +133,20 @@ const REGISTRY: Record<string, SourceSpec> = {
         ? { ok: true }
         : { ok: false, reason: "bad quotes shape or claimed realtime" },
   },
+  "finnhub.quote": {
+    name: "finnhub.quote",
+    maxAgeMs: 20_000,
+    validate: (q: any) =>
+      q && typeof q.price === "number" && q.price > 0 && q.meta?.source === "finnhub.quote"
+        ? { ok: true }
+        : { ok: false, reason: "bad quote shape" },
+  },
+  "finnhub.earnings": {
+    name: "finnhub.earnings",
+    maxAgeMs: 6 * 60 * 60_000,
+    validate: (d: any) =>
+      Array.isArray(d) ? { ok: true } : { ok: false, reason: "nonArray" },
+  },
   "stocktwits.sentiment": {
     name: "stocktwits.sentiment",
     maxAgeMs: 10 * 60_000,

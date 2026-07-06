@@ -112,6 +112,27 @@ const REGISTRY: Record<string, SourceSpec> = {
         ? { ok: true }
         : { ok: false, reason: "bad snapshot shape" },
   },
+  // MarketQuote[] from Yahoo continuous contracts / index symbols (11.5).
+  // Delayed by design — validation checks shape + plausible prices, and that
+  // metadata never claims realtime for these sources.
+  "yahoo.futures": {
+    name: "yahoo.futures",
+    maxAgeMs: 30 * 60_000,
+    validate: (qs: any) =>
+      Array.isArray(qs) && qs.length > 0 &&
+      qs.every((q: any) => typeof q.price === "number" && q.price > 0 && q.meta?.realtime === false)
+        ? { ok: true }
+        : { ok: false, reason: "bad quotes shape or claimed realtime" },
+  },
+  "yahoo.index": {
+    name: "yahoo.index",
+    maxAgeMs: 30 * 60_000,
+    validate: (qs: any) =>
+      Array.isArray(qs) && qs.length > 0 &&
+      qs.every((q: any) => typeof q.price === "number" && q.price > 0 && q.meta?.realtime === false)
+        ? { ok: true }
+        : { ok: false, reason: "bad quotes shape or claimed realtime" },
+  },
   "stocktwits.sentiment": {
     name: "stocktwits.sentiment",
     maxAgeMs: 10 * 60_000,

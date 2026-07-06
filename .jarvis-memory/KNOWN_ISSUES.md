@@ -11,7 +11,7 @@ Append open items here. Close them out with a strike-through + date when fixed.
   runtime, OR swap to `onnxruntime-web` directly, OR move embedding to a
   separate service. See `src/lib/semantic/embed.ts`.
 
-- **Build error at `pnpm run build`** because some routes initialize the
+- ~~**Build error at `pnpm run build`** because some routes initialize the~~ **FIXED 2026-07-05 (11.12): lazy `getGroq()` in all three files.** Original note: some routes initialized the
   Groq SDK at module top-level with `process.env.GROQ_API_KEY!`. CI works
   around it by injecting stub env vars. Cleaner fix: lazy-init the SDK
   inside each handler so build-time evaluation doesn't crash.

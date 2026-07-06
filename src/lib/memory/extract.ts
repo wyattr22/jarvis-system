@@ -1,7 +1,13 @@
 import Groq from "groq-sdk"
 import { saveMemory, getAllMemories } from "./store"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init: the SDK throws at construction when the key is absent, which
+// crashed `next build` page-data collection in keyless environments (11.12).
+let _groq: Groq | null = null
+function getGroq(): Groq {
+  if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  return _groq
+}
 
 interface ExtractedMemory {
   type: "fact" | "insight" | "pattern" | "preference"
@@ -52,7 +58,7 @@ Return JSON only, no explanation:
   ]
 }`
 
-    const res = await groq.chat.completions.create({
+    const res = await getGroq().chat.completions.create({
       model: "llama-3.1-8b-instant",  // fast cheap model for extraction
       max_tokens: 400,
       temperature: 0.1,

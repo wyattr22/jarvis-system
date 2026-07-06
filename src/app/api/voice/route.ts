@@ -23,7 +23,13 @@ import { recordTurn, checkAndApplyCorrection } from "@/lib/learning/corrections"
 import { maybeSetupStats } from "@/lib/learning/setup-stats"
 import { getOpportunitiesContextLine } from "@/lib/learning/opportunities-summary"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init: the SDK throws at construction when the key is absent, which
+// crashed `next build` page-data collection in keyless environments (11.12).
+let _groq: Groq | null = null
+function getGroq(): Groq {
+  if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  return _groq
+}
 
 // ── Ticker detection ──────────────────────────────────────────
 const KNOWN_TICKERS = new Set([
@@ -510,7 +516,7 @@ ${content.slice(0, 14000)}`
     await ingestResearch(baseName, content.slice(0, 60000)).catch(() => {})
 
     // 2. LLM generates a compact knowledge summary for the always-in-context knowledge base
-    const res = await groq.chat.completions.create({
+    const res = await getGroq().chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }],
@@ -734,7 +740,7 @@ ${tradeOrder ? `\nTRADE ORDER PENDING: The user wants to ${tradeOrder.qty === 0 
     })
 
     const callGroq = (model: string) => attempt(`Groq/${model}`, async () => {
-      const r = await groq.chat.completions.create({ model, max_tokens: maxTok, messages, temperature: temp,
+      const r = await getGroq().chat.completions.create({ model, max_tokens: maxTok, messages, temperature: temp,
         // @ts-expect-error — groq-sdk accepts timeout in options
         timeout: 10000 })
       return r.choices[0]?.message?.content ?? ''

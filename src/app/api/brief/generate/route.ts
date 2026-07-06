@@ -6,7 +6,13 @@ import { getTodaysEconomicEvents, formatEconomicsForContext } from "@/lib/data/e
 import { getJournalInsights, formatJournalForContext } from "@/lib/trading/journal"
 import { sendPushToAll } from "@/lib/push"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init: the SDK throws at construction when the key is absent, which
+// crashed `next build` page-data collection in keyless environments (11.12).
+let _groq: Groq | null = null
+function getGroq(): Groq {
+  if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  return _groq
+}
 
 async function ensureBriefsTable() {
   await db.execute(`
@@ -68,7 +74,7 @@ ${contextParts.join('\n')}
 
 Give a sharp morning brief covering: market conditions, any key economic events today, account status, and one tactical edge tip based on the journal data. Be direct and specific.`
 
-  const res = await groq.chat.completions.create({
+  const res = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     max_tokens: 200,
     temperature: 0.4,

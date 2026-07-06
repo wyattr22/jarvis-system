@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/universe/scan",
+      "schedule": "0 11 * * 1-5"
+    },
+    {
       "path": "/api/features/compute",
       "schedule": "30 20 * * 1-5"
     },

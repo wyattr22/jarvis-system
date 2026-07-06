@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { getMovers } from "@/lib/data/alpaca"
 import { FreshnessBadge } from "@/components/ui/freshness-badge"
+import { ChartTile } from "@/components/chart-modal"
 import { UP, DOWN, fmtPrice, ErrorNote } from "./shared"
 
 function MoverList({ title, color, items }: {
@@ -16,9 +17,14 @@ function MoverList({ title, color, items }: {
           {items.map(m => (
             <tr key={m.symbol} style={{ borderBottom: "1px solid #111827" }}>
               <td style={{ padding: "4px 0" }}>
-                <Link href={`/symbol/${m.symbol}`} style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                  <b>{m.symbol}</b>
-                </Link>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <ChartTile symbol={m.symbol}>
+                    <b style={{ color: "#e5e7eb" }}>{m.symbol}</b>
+                  </ChartTile>
+                  <Link href={`/symbol/${m.symbol}`} title={`${m.symbol} detail page`} style={{ color: "#6b7280", textDecoration: "none", fontSize: 10 }}>
+                    ↗
+                  </Link>
+                </span>
               </td>
               <td style={{ textAlign: "right", color: "#9ca3af" }}>${fmtPrice(m.price)}</td>
               <td style={{ textAlign: "right", color, fontWeight: 600, paddingLeft: 12 }}>

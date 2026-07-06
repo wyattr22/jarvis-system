@@ -23,3 +23,12 @@ Append open items here. Close them out with a strike-through + date when fixed.
   exist.** The registry smoke test (`registry.test.ts`) is the real catalog
   for now (22 tools after 11.10). Generate the doc from `listTools()` in a
   future step.
+
+- **Vercel Hobby now enforces daily-only crons** — deploys were REJECTED with
+  the old sub-daily schedules (`*/15`, `*/30`), which also means intraday
+  monitors (drawdown-check, allocation-outcomes, embeddings backfill) have
+  likely NOT been running as scheduled on the June-26 production deploy.
+  11.11 downgraded them to once-daily so deploys work again. To restore
+  intraday cadence for free: point cron-job.org (or similar) at the endpoints
+  with `Authorization: Bearer $CRON_SECRET` — they're plain GET routes.
+  Or upgrade to Vercel Pro.

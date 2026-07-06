@@ -34,7 +34,8 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.7 | phase-11.7/markets-page | ✅ merged (#64) |
 | 11.8 | phase-11.8/watchlist-universe | ✅ merged (#65) |
 | 11.9 | phase-11.9/llm-chain-and-api-audit | ✅ merged (#66) |
-| 11.10 | phase-11.10/mcp-markets-tool | ✅ this PR |
+| 11.10 | phase-11.10/mcp-markets-tool | ✅ merged (#67) |
+| 11.11 | phase-11.11/hobby-cron-compliance — Vercel Hobby rejects sub-daily crons; 4 schedules downgraded to daily (see KNOWN_ISSUES for the free external-pinger recipe) | ✅ this PR |
 
 ## This PR (11.10) — MCP markets tools
 

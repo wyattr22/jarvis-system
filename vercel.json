@@ -34,15 +34,15 @@
     },
     {
       "path": "/api/sync/allocation-outcomes",
-      "schedule": "*/30 13-21 * * 1-5"
+      "schedule": "30 20 * * 1-5"
     },
     {
       "path": "/api/sync/drawdown-check",
-      "schedule": "*/15 13-21 * * 1-5"
+      "schedule": "0 17 * * 1-5"
     },
     {
       "path": "/api/sync/news-scan",
-      "schedule": "0 12,16,20 * * 1-5"
+      "schedule": "0 12 * * 1-5"
     },
     {
       "path": "/api/sync/time-stops",
@@ -58,7 +58,7 @@
     },
     {
       "path": "/api/sync/backfill-embeddings",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 4 * * *"
     }
   ]
 }

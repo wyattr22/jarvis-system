@@ -29,14 +29,29 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.2 | phase-11.2/quote-freshness-core | ✅ merged (#60) |
 | 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — **still not added**) | queued |
 | 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ merged (#61) |
-| 11.5 | phase-11.5/futures-indexes-catalog | ✅ this PR |
-| 11.6 | phase-11.6/instrument-model | queued |
+| 11.5 | phase-11.5/futures-indexes-catalog | ✅ merged (#62) |
+| 11.6 | phase-11.6/instrument-model | ✅ this PR |
 | 11.7 | phase-11.7/markets-page | queued |
 | 11.8 | phase-11.8/watchlist-universe | queued |
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.5) — futures + indexes catalog
+## This PR (11.6) — instrument model
+
+Parser util, NOT new DB columns — `instrument TEXT` stays canonical; structure
+derived on read; 100% backward compatible with existing opportunity rows.
+
+- `instruments/parse.ts` — `parseInstrument(raw, hint?)`: OCC options
+  (root+YYMMDD+C/P+strike*1000, date-validated), dated futures (month codes
+  FGHJKMNQUVXZ, catalog-gated roots so plain tickers can't misparse), Yahoo
+  continuous (`ES=F`), forex normalization (`EURUSD`/`EUR_USD`→`EUR/USD`,
+  currency-code-gated), equity fallthrough honoring the hint.
+- `instruments/format.ts` — "SPY 18 Jul '25 $550 Call", "S&P 500 E-mini
+  Sep '26", etc.
+- Opportunities dashboard renders formatted non-equity instruments (raw OCC
+  string kept in the title tooltip).
+
+## Previous PR (11.5) — futures + indexes catalog
 
 - `yahoo.ts` — shared budget-aware Yahoo chart fetcher → `MarketQuote` with
   honest delayed meta; rides the 11.2 stale-shadow cache.

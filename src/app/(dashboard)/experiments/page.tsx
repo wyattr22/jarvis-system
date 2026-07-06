@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
+import { ShadowComparison } from "@/components/shadow-comparison"
 
 type Experiment = {
   id: string
@@ -41,6 +42,7 @@ export default function ExperimentsPage() {
 
   return (
     <div className="p-6 space-y-4">
+      <ShadowComparison />
       <div className="border-b pb-4">
         <h1 className="text-sm font-medium tracking-[0.15em] text-primary uppercase">Experiments</h1>
         <p className="text-xs text-muted-foreground mt-1">

@@ -62,12 +62,21 @@ export type ProviderRequest = {
   maxTokens?: number
 }
 
+// Throws before any network call when a provider key is missing, so the
+// router can skip the provider cheaply instead of sending a guaranteed 401.
+function requireKey(envVar: string): string {
+  const value = process.env[envVar]
+  if (!value) throw new Error(`${envVar} not configured`)
+  return value
+}
+
 async function callGroq(req: ProviderRequest): Promise<string> {
+  const apiKey = requireKey("GROQ_API_KEY")
   const res = await safeFetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: req.model.modelId,
@@ -82,11 +91,12 @@ async function callGroq(req: ProviderRequest): Promise<string> {
 }
 
 async function callCerebras(req: ProviderRequest): Promise<string> {
+  const apiKey = requireKey("CEREBRAS_API_KEY")
   const res = await safeFetch("https://api.cerebras.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.CEREBRAS_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: req.model.modelId,
@@ -101,11 +111,12 @@ async function callCerebras(req: ProviderRequest): Promise<string> {
 }
 
 async function callOpenRouter(req: ProviderRequest): Promise<string> {
+  const apiKey = requireKey("OPENROUTER_API_KEY")
   const res = await safeFetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "HTTP-Referer": "https://jarvis-system.vercel.app",
     },
     body: JSON.stringify({

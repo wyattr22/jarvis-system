@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { FreshnessBadge } from "@/components/ui/freshness-badge"
+import type { QuoteMeta } from "@/lib/data/freshness"
 
 type WatchItem = {
   instrument: string
@@ -15,7 +17,9 @@ type WatchItem = {
   created_at: number
 }
 
-type Quote = { bid: number; ask: number; mid: number }
+type Quote = { bid: number; ask: number; mid: number; meta?: QuoteMeta }
+
+type SearchResult = { symbol: string; name: string; assetClass: string }
 
 const AGENT_COLOR: Record<string, string> = {
   observer:   "text-primary border-primary/30",
@@ -30,6 +34,21 @@ export default function WatchlistPage() {
   const [addSymbol, setAddSymbol] = useState("")
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([])
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounced cross-asset typeahead against /api/symbols/search
+  function onSearchInput(value: string) {
+    setAddSymbol(value.toUpperCase())
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (value.trim().length < 1) { setSuggestions([]); return }
+    searchTimer.current = setTimeout(() => {
+      fetch(`/api/symbols/search?q=${encodeURIComponent(value.trim())}`)
+        .then(r => r.json())
+        .then(d => setSuggestions((d.results ?? []).slice(0, 8)))
+        .catch(() => setSuggestions([]))
+    }, 200)
+  }
 
   async function load() {
     setLoading(true)
@@ -122,15 +141,33 @@ export default function WatchlistPage() {
           </p>
         </div>
 
-        {/* Manual add */}
-        <div className="flex items-center gap-2">
-          <input
-            value={addSymbol}
-            onChange={e => setAddSymbol(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === "Enter" && addManual()}
-            placeholder="ADD TICKER..."
-            className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground placeholder:text-muted-foreground w-28 uppercase"
-          />
+        {/* Manual add with cross-asset typeahead */}
+        <div className="flex items-center gap-2 relative">
+          <div className="relative">
+            <input
+              value={addSymbol}
+              onChange={e => onSearchInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { setSuggestions([]); addManual() } }}
+              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              placeholder="ADD SYMBOL..."
+              className="text-[10px] tracking-widest bg-secondary border border-border rounded px-2 py-1 text-foreground placeholder:text-muted-foreground w-40 uppercase"
+            />
+            {suggestions.length > 0 && (
+              <div className="absolute top-full left-0 mt-1 w-72 z-20 bg-background border border-border rounded shadow-lg overflow-hidden">
+                {suggestions.map(s => (
+                  <button
+                    key={`${s.assetClass}:${s.symbol}`}
+                    onMouseDown={() => { setAddSymbol(s.symbol); setSuggestions([]) }}
+                    className="flex w-full items-center justify-between px-2 py-1.5 text-left hover:bg-secondary/60"
+                  >
+                    <span className="text-xs text-foreground font-medium">{s.symbol}</span>
+                    <span className="text-[10px] text-muted-foreground truncate ml-2 flex-1 text-right">{s.name}</span>
+                    <span className="text-[9px] text-primary ml-2 uppercase">{s.assetClass}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <Button
             size="sm"
             onClick={addManual}
@@ -188,11 +225,14 @@ export default function WatchlistPage() {
                           </p>
                         </Link>
 
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 flex items-center gap-2">
                           {q ? (
-                            <p className="text-sm font-medium tabular-nums text-foreground">
-                              ${q.mid.toFixed(2)}
-                            </p>
+                            <>
+                              <p className="text-sm font-medium tabular-nums text-foreground">
+                                ${q.mid.toFixed(2)}
+                              </p>
+                              {q.meta && <FreshnessBadge meta={q.meta} />}
+                            </>
                           ) : (
                             <p className="text-xs text-muted-foreground">—</p>
                           )}

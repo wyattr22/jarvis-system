@@ -34,6 +34,9 @@ export const SOURCE_DELAYS: Record<string, { delaySeconds: number; realtime: boo
   "finnhub.forex": { delaySeconds: 0, realtime: true },
   "yahoo.futures": { delaySeconds: 900, realtime: false }, // no free real-time CME data exists
   "yahoo.index": { delaySeconds: 900, realtime: false },
+  // Yahoo FX prints are near-live but unofficial with no SLA — labeled
+  // delayed until the Finnhub provider (11.3) takes over as forex primary.
+  "yahoo.forex": { delaySeconds: 900, realtime: false },
   "alphavantage.daily": { delaySeconds: 86400, realtime: false },
 }
 

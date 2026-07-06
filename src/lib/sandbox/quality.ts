@@ -98,11 +98,19 @@ const REGISTRY: Record<string, SourceSpec> = {
         ? { ok: true }
         : { ok: false, reason: "empty" },
   },
-  "yahoo.options": {
-    name: "yahoo.options",
-    maxAgeMs: 10 * 60_000,
+  // Validates the assembled OptionsSnapshot (works for both the Alpaca and
+  // Yahoo provider paths). The old spec checked raw-chain fields
+  // (o.calls || o.puts) that OptionsSnapshot never had, so every options
+  // fetch scored ok:false and the data never reached LLM context.
+  "options.snapshot": {
+    name: "options.snapshot",
+    maxAgeMs: 30 * 60_000,
     validate: (o: any) =>
-      o && (o.calls || o.puts) ? { ok: true } : { ok: false, reason: "no chain" },
+      o && typeof o.spot === "number" && o.spot > 0 &&
+      typeof o.maxPain === "number" && o.maxPain > 0 &&
+      typeof o.pcRatio === "number"
+        ? { ok: true }
+        : { ok: false, reason: "bad snapshot shape" },
   },
   "stocktwits.sentiment": {
     name: "stocktwits.sentiment",

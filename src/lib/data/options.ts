@@ -1,4 +1,21 @@
+// Options positioning snapshot — provider dispatch:
+//   1. Alpaca (free tier: contracts endpoint for OI + indicative snapshots
+//      for quotes/IV, 15-min delayed) — primary since 11.4
+//   2. Yahoo options scrape — fallback (brittle unofficial API)
+// Both normalize into OptionContract[] and share the pure math in
+// options-math.ts. The snapshot carries QuoteMeta so the UI can badge it.
+
 import { safeFetch } from "@/lib/sandbox/whitelist"
+import { metaFor, type QuoteMeta } from "./freshness"
+import { getLatestQuote } from "./alpaca"
+import { getAlpacaChain } from "./alpaca-options"
+import {
+  computeMaxPain,
+  computePcRatio,
+  computeGex,
+  topWalls,
+  type OptionContract,
+} from "./options-math"
 
 export interface OptionsSnapshot {
   spot: number
@@ -7,15 +24,45 @@ export interface OptionsSnapshot {
   gex: number
   callWalls: { strike: number; oi: number }[]
   putWalls: { strike: number; oi: number }[]
+  meta: QuoteMeta
 }
 
-function bsGamma(S: number, K: number, T: number, r: number, sigma: number): number {
-  if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) return 0
-  const d1 = (Math.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * Math.sqrt(T))
-  return Math.exp(-d1 * d1 / 2) / (Math.sqrt(2 * Math.PI) * S * sigma * Math.sqrt(T))
+// Exported for tests — pure assembly from a normalized chain.
+export function buildSnapshot(
+  contracts: OptionContract[],
+  spot: number,
+  meta: QuoteMeta,
+): OptionsSnapshot {
+  return {
+    spot,
+    maxPain: computeMaxPain(contracts, spot),
+    pcRatio: computePcRatio(contracts),
+    gex: computeGex(contracts, spot),
+    callWalls: topWalls(contracts, "C"),
+    putWalls: topWalls(contracts, "P"),
+    meta,
+  }
 }
 
 export async function getOptionsSnapshot(symbol: string): Promise<OptionsSnapshot | null> {
+  // Primary: Alpaca free tier (real OI, official OPRA-derived quotes, 15-min delayed)
+  try {
+    const quote = await getLatestQuote(symbol)
+    const spot = quote.mid
+    if (spot > 0) {
+      const chain = await getAlpacaChain(symbol, spot)
+      if (chain) {
+        return buildSnapshot(chain.contracts, spot, metaFor("alpaca.options", chain.asOf))
+      }
+    }
+  } catch {
+    // fall through to Yahoo
+  }
+  return getYahooOptionsSnapshot(symbol)
+}
+
+// Legacy Yahoo scrape, kept as the fallback path.
+async function getYahooOptionsSnapshot(symbol: string): Promise<OptionsSnapshot | null> {
   try {
     const res = await safeFetch(
       `https://query1.finance.yahoo.com/v7/finance/options/${symbol}`,
@@ -35,48 +82,22 @@ export async function getOptionsSnapshot(symbol: string): Promise<OptionsSnapsho
     const puts: Record<string, number>[] = result.options?.[0]?.puts ?? []
     if (!spot || !calls.length) return null
 
-    // P/C ratio
-    const callOI = calls.reduce((s, c) => s + (c.openInterest ?? 0), 0)
-    const putOI = puts.reduce((s, p) => s + (p.openInterest ?? 0), 0)
-    const pcRatio = callOI > 0 ? putOI / callOI : 1
+    const contracts: OptionContract[] = [
+      ...calls.map(c => ({
+        strike: c.strike as number,
+        right: "C" as const,
+        openInterest: (c.openInterest ?? 0) as number,
+        impliedVolatility: c.impliedVolatility as number | undefined,
+      })),
+      ...puts.map(p => ({
+        strike: p.strike as number,
+        right: "P" as const,
+        openInterest: (p.openInterest ?? 0) as number,
+        impliedVolatility: p.impliedVolatility as number | undefined,
+      })),
+    ]
 
-    // Max pain
-    const strikes = [...new Set([
-      ...calls.map(c => c.strike as number),
-      ...puts.map(p => p.strike as number),
-    ])].sort((a, b) => a - b)
-
-    let minPain = Infinity, maxPain = spot
-    for (const s of strikes) {
-      let pain = 0
-      for (const c of calls) if (s > c.strike) pain += (s - c.strike) * (c.openInterest ?? 0)
-      for (const p of puts) if (s < p.strike) pain += (p.strike - s) * (p.openInterest ?? 0)
-      if (pain < minPain) { minPain = pain; maxPain = s }
-    }
-
-    // GEX — nearest expiry, T≈30d proxy
-    const T = 30 / 365
-    let gex = 0
-    for (const c of calls) {
-      const g = bsGamma(spot, c.strike as number, T, 0.05, (c.impliedVolatility as number) ?? 0.3)
-      gex += g * (c.openInterest ?? 0) * 100 * spot * spot
-    }
-    for (const p of puts) {
-      const g = bsGamma(spot, p.strike as number, T, 0.05, (p.impliedVolatility as number) ?? 0.3)
-      gex -= g * (p.openInterest ?? 0) * 100 * spot * spot
-    }
-
-    const callWalls = [...calls]
-      .sort((a, b) => (b.openInterest ?? 0) - (a.openInterest ?? 0))
-      .slice(0, 3)
-      .map(c => ({ strike: c.strike as number, oi: (c.openInterest ?? 0) as number }))
-
-    const putWalls = [...puts]
-      .sort((a, b) => (b.openInterest ?? 0) - (a.openInterest ?? 0))
-      .slice(0, 3)
-      .map(p => ({ strike: p.strike as number, oi: (p.openInterest ?? 0) as number }))
-
-    return { spot, maxPain, pcRatio, gex, callWalls, putWalls }
+    return buildSnapshot(contracts, spot, metaFor("yahoo.options", new Date().toISOString()))
   } catch {
     return null
   }

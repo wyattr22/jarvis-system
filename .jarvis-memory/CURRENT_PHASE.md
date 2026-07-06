@@ -26,9 +26,9 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 |---|---|---|
 | 11.0 | (no PR) sync main — **PR #58 landed the 57-PR stack on main**; local main synced; baseline green (89 tests) | ✅ done |
 | 11.1 | phase-11.1/env-audit-housekeeping | ✅ merged (#59) |
-| 11.2 | phase-11.2/quote-freshness-core | ✅ this PR |
-| 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — not yet added) | queued |
-| 11.4 | phase-11.4/alpaca-options-chain | queued |
+| 11.2 | phase-11.2/quote-freshness-core | ✅ merged (#60) |
+| 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — **still not added**) | queued |
+| 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ this PR |
 | 11.5 | phase-11.5/futures-indexes-catalog | queued |
 | 11.6 | phase-11.6/instrument-model | queued |
 | 11.7 | phase-11.7/markets-page | queued |
@@ -36,7 +36,26 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.2) — quote freshness core
+## This PR (11.4) — Alpaca options chain
+
+- `options-math.ts` — pure, provider-agnostic positioning math extracted from
+  the old Yahoo-only path: `computeMaxPain`, `computePcRatio`, `computeGex`,
+  `topWalls`, `bsGamma`. Fully unit-tested on synthetic books.
+- `alpaca-options.ts` — free-tier chain: trading-API `/v2/options/contracts`
+  (real OI; probe confirmed 810 OI on SPY 740C) + indicative snapshots for
+  IV/quote timestamps. Picks the highest-OI expiry 5–12 days out, ±15% strike
+  band, drops zero-OI contracts. OCC symbols are canonical instrument strings.
+- `options.ts` — dispatcher: Alpaca primary → Yahoo scrape fallback; both
+  normalize to `OptionContract[]`; `OptionsSnapshot` gains `meta: QuoteMeta`
+  (alpaca.options = 900s delay).
+- **Bug fix:** the `yahoo.options` quality spec validated raw-chain fields
+  (`o.calls || o.puts`) that `OptionsSnapshot` never had — every options fetch
+  scored `ok:false`, so options data NEVER reached LLM context. Replaced with
+  `options.snapshot` spec validating the actual shape.
+- Live-verified: SPY spot 744.07, maxPain 745, P/C 0.75, GEX +$1.65B via
+  the Alpaca path.
+
+## Previous PR (11.2) — quote freshness core
 
 The metadata contract every Phase 11 surface conforms to:
 

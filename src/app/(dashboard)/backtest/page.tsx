@@ -94,6 +94,47 @@ export default function BacktestPage() {
     }
   }
 
+  // Strategy-builder overrides (12.6). Empty string = use bot.py default.
+  const [showBuilder, setShowBuilder] = useState(false)
+  const [pOverrides, setPOverrides] = useState<Record<string, string>>({})
+  const [symbolsInput, setSymbolsInput] = useState("")
+
+  const BUILDER_FIELDS: { key: string; label: string; hint: string }[] = [
+    { key: "takeProfitPct", label: "Take profit %", hint: "0.04 = 4%" },
+    { key: "maxStopRiskPct", label: "Max stop risk %", hint: "0.03 = 3%" },
+    { key: "minRR", label: "Min R:R", hint: "2.0" },
+    { key: "rsiMin", label: "RSI min", hint: "40" },
+    { key: "rsiMax", label: "RSI max", hint: "80" },
+    { key: "emaFast", label: "EMA fast", hint: "9" },
+    { key: "emaSlow", label: "EMA slow", hint: "21" },
+    { key: "volumeMultiplier", label: "Volume mult", hint: "1.0" },
+    { key: "atrMinPct", label: "ATR min %", hint: "0.004" },
+    { key: "minReversalConfluences", label: "Reversal confluences", hint: "2 of IFVG/BOS/OTE" },
+    { key: "minContinuationConfluences", label: "Continuation confluences", hint: "1 of FVG/EQ/OB/BRK" },
+    { key: "maxHoldBars", label: "Max hold (15m bars)", hint: "20 ≈ 5h" },
+  ]
+
+  function buildRequestBody() {
+    const params: Record<string, number> = {}
+    let maxHoldBars: number | undefined
+    for (const [k, v] of Object.entries(pOverrides)) {
+      if (v.trim() === "") continue
+      const num = Number(v)
+      if (Number.isNaN(num)) continue
+      if (k === "maxHoldBars") maxHoldBars = num
+      else params[k] = num
+    }
+    const symbols = symbolsInput.trim()
+      ? symbolsInput.split(/[\s,]+/).map(x => x.toUpperCase()).filter(Boolean)
+      : undefined
+    return {
+      strategyId,
+      ...(Object.keys(params).length ? { params } : {}),
+      ...(maxHoldBars !== undefined ? { maxHoldBars } : {}),
+      ...(symbols ? { symbols } : {}),
+    }
+  }
+
   async function runWalkForward() {
     if (!strategyId) return
     setRunning(true)
@@ -104,7 +145,7 @@ export default function BacktestPage() {
       const res = await fetch("/api/backtest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyId }),
+        body: JSON.stringify(buildRequestBody()),
       })
       const json = await res.json()
       if (json.result) setWfResult(json.result)
@@ -172,14 +213,24 @@ export default function BacktestPage() {
             </select>
           )}
           {tab === "backtest" && (
-            <Button
-              size="sm"
-              onClick={runWalkForward}
-              disabled={running || !strategyId}
-              className="text-[10px] tracking-widest h-7 bg-primary text-primary-foreground"
-            >
-              {running ? "RUNNING..." : "WALK-FORWARD"}
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowBuilder(v => !v)}
+                className="text-[10px] tracking-widest h-7"
+              >
+                {showBuilder ? "HIDE BUILDER" : "STRATEGY BUILDER"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={runWalkForward}
+                disabled={running || !strategyId}
+                className="text-[10px] tracking-widest h-7 bg-primary text-primary-foreground"
+              >
+                {running ? "RUNNING..." : "WALK-FORWARD"}
+              </Button>
+            </>
           )}
           {tab === "forward" && (
             <Button
@@ -193,6 +244,49 @@ export default function BacktestPage() {
           )}
         </div>
       </div>
+
+      {/* Strategy builder (12.6) — leave a field blank to keep the bot.py default */}
+      {showBuilder && tab === "backtest" && (
+        <div className="border border-border rounded p-4 space-y-3">
+          <p className="text-[10px] text-muted-foreground tracking-widest">
+            STRATEGY BUILDER — blank fields use the exact bot.py defaults · results are simulated, never traded
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {BUILDER_FIELDS.map(f => (
+              <label key={f.key} className="block">
+                <span className="text-[9px] text-muted-foreground tracking-widest">{f.label}</span>
+                <input
+                  value={pOverrides[f.key] ?? ""}
+                  onChange={e => setPOverrides(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.hint}
+                  className="mt-0.5 w-full text-xs bg-secondary border border-border rounded px-2 py-1 text-foreground placeholder:text-muted-foreground/60"
+                />
+              </label>
+            ))}
+          </div>
+          <label className="block">
+            <span className="text-[9px] text-muted-foreground tracking-widest">
+              SYMBOLS (comma/space separated · blank = rotating universe top 30)
+            </span>
+            <input
+              value={symbolsInput}
+              onChange={e => setSymbolsInput(e.target.value.toUpperCase())}
+              placeholder="AMD NVDA SOXL ..."
+              className="mt-0.5 w-full text-xs bg-secondary border border-border rounded px-2 py-1 text-foreground placeholder:text-muted-foreground/60 uppercase"
+            />
+          </label>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setPOverrides({}); setSymbolsInput("") }}
+              className="text-[10px] tracking-widest h-7"
+            >
+              RESET TO DEFAULTS
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border border-border rounded p-0.5 w-fit">

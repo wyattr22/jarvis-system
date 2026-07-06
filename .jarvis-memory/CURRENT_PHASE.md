@@ -31,12 +31,27 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ merged (#61) |
 | 11.5 | phase-11.5/futures-indexes-catalog | ✅ merged (#62) |
 | 11.6 | phase-11.6/instrument-model | ✅ merged (#63) |
-| 11.7 | phase-11.7/markets-page | ✅ this PR |
-| 11.8 | phase-11.8/watchlist-universe | queued |
+| 11.7 | phase-11.7/markets-page | ✅ merged (#64) |
+| 11.8 | phase-11.8/watchlist-universe | ✅ this PR |
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.7) — /markets overview page
+## This PR (11.8) — watchlist universe + cross-asset search
+
+- SSE stream (`/api/stream`) now reads symbols from the DB watchlist
+  (re-read every ~60s, equities-only via `parseInstrument`, cap 25, legacy
+  defaults as fallback) instead of the hardcoded 12; payload rows are
+  MarketQuotes with `meta` (legacy `mid` kept for old consumers).
+- `/api/quote/[symbol]` dispatches by parsed asset class: equity/crypto →
+  Alpaca IEX, forex → Yahoo `PAIR=X` (until 11.3 Finnhub), futures → Yahoo.
+  Always returns MarketQuote + legacy fields. Live-verified: EUR_USD 1.1432,
+  ES=F 7553.25, AAPL 308.43 with correct per-source meta.
+- `/api/symbols/search` — full Alpaca `/v2/assets` equity universe (cached
+  24h in Redis) + futures/forex/index catalogs, ranked exact > prefix > name
+  substring (`rankSymbolMatches` pure + tested).
+- Watchlist page: cross-asset typeahead + FreshnessBadge on every quote.
+
+## Previous PR (11.7) — /markets overview page
 
 The visible payoff: one cockpit for indexes, futures (delayed + live ETF proxy
 side-by-side), forex (placeholder until FINNHUB_API_KEY + 11.3), macro,

@@ -19,6 +19,9 @@ import { getOptionsSnapshot as rawGetOptions, type OptionsSnapshot } from "@/lib
 import { getIntermarketSnapshot as rawGetIntermarket, type IntermarketSnapshot } from "@/lib/data/intermarket"
 import { getTodaysEconomicEvents as rawGetEconomics, type EconomicEvent } from "@/lib/data/economics"
 import { hasRecentInsiderActivity as rawGetInsider } from "@/lib/data/insider"
+import { getFuturesQuotes as rawGetFutures } from "@/lib/data/futures"
+import { getIndexQuotes as rawGetIndexes } from "@/lib/data/indexes"
+import type { MarketQuote } from "@/lib/data/freshness"
 
 export const getBarsGated = (symbol: string, tf: string, limit?: number, days?: number): Promise<SourceResult<Bar[]>> =>
   evaluateSource("alpaca.bars", () => rawGetBars(symbol, tf, limit, days))
@@ -49,6 +52,12 @@ export const getOptionsGated = (symbol: string): Promise<SourceResult<OptionsSna
 
 export const getIntermarketGated = (): Promise<SourceResult<IntermarketSnapshot>> =>
   evaluateSource("yahoo.intermarket", () => rawGetIntermarket())
+
+export const getFuturesGated = (): Promise<SourceResult<MarketQuote[]>> =>
+  evaluateSource("yahoo.futures", () => rawGetFutures())
+
+export const getIndexesGated = (): Promise<SourceResult<MarketQuote[]>> =>
+  evaluateSource("yahoo.index", () => rawGetIndexes())
 
 export const getEconomicsGated = (): Promise<SourceResult<EconomicEvent[]>> =>
   evaluateSource("alphavantage.economic", () => rawGetEconomics())

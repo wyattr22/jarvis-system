@@ -146,3 +146,30 @@ TF-IDF alone is already 3-4× better than the previous raw term count.
 Most production calls hit the TF-IDF path. If we need true semantic later we
 can swap in a different runtime (Edge function or external embeddings service)
 without touching consumers.
+
+---
+
+## 2026-07-05 — Futures/index visibility: delayed Yahoo + live ETF proxy pairing
+
+**Context:** Phase 11 needs futures + index visibility on a free-tier-only
+budget. Probes with the project key: Alpaca has NO futures data at any tier;
+Alpaca's new indices endpoint (June 2026) returns 403 on free Basic. Real-time
+CME data legally requires ~$25/mo API + $290–500/mo CME license — rejected.
+
+**Decision:** Futures come from Yahoo `=F` continuous contracts and indexes
+from Yahoo `^`-symbols, both **explicitly labeled DELAYED ~15m** via the 11.2
+freshness contract, and every future is paired with a real-time ETF proxy
+quoted on Alpaca IEX (ES→SPY, NQ→QQQ, GC→GLD, CL→USO, ZN→IEF, ZB→TLT,
+6E→FXE — table in `src/lib/instruments/proxies.ts`). The UI renders both.
+Honesty is a product feature: freshness badges everywhere, never implied
+real-time.
+
+**Why:** The only free real-time alternative is proxies; the only accurate
+futures levels are delayed. Showing both beats pretending either is complete.
+
+**Consequences:** Yahoo is unofficial and brittle — mitigated by the
+stale-shadow cache (24h) + quality-gate confidence + proxy redundancy. If a
+real futures data budget ever appears (Databento etc.), swap `futures.ts`
+internals; consumers only see `MarketQuote`. Also fixed here: Yahoo's `^DXY`
+is dead (price=None since 2019) — dollar index must be `DX-Y.NYB`; the old
+intermarket `dxy` field had been silently null.

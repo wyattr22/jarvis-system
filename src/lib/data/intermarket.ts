@@ -1,6 +1,10 @@
-import { safeFetch } from "@/lib/sandbox/whitelist"
+// Intermarket macro snapshot for LLM context. Since 11.5 this consumes the
+// shared Yahoo fetcher (budget-aware, stale-shadow cached) instead of its own
+// scrape, and the dollar index uses DX-Y.NYB — the old ^DXY symbol is dead on
+// Yahoo (price=None, 2019 timestamp), so `dxy` had been silently null.
 
-// Symbols: ^DXY (dollar), ^TNX (10Y yield %), GC=F (gold), CL=F (crude oil), SI=F (silver)
+import { getYahooQuote } from "./yahoo"
+
 export interface IntermarketSnapshot {
   dxy: number | null      // US Dollar Index
   yield10y: number | null // 10Y Treasury yield %
@@ -9,36 +13,21 @@ export interface IntermarketSnapshot {
   silver: number | null
 }
 
-async function fetchYahooQuote(symbol: string): Promise<number | null> {
-  try {
-    const encoded = encodeURIComponent(symbol)
-    const res = await safeFetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?interval=1d&range=2d`,
-      {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Jarvis/2.0)" },
-        next: { revalidate: 300 },
-        signal: AbortSignal.timeout(5000),
-      }
-    )
-    if (!res.ok) return null
-    const json = await res.json()
-    const closes = json.chart?.result?.[0]?.indicators?.quote?.[0]?.close as number[] | undefined
-    if (!closes?.length) return null
-    return closes[closes.length - 1]
-  } catch {
-    return null
-  }
-}
-
 export async function getIntermarketSnapshot(): Promise<IntermarketSnapshot> {
   const [dxy, yield10y, gold, oil, silver] = await Promise.all([
-    fetchYahooQuote("^DXY"),
-    fetchYahooQuote("^TNX"),
-    fetchYahooQuote("GC=F"),
-    fetchYahooQuote("CL=F"),
-    fetchYahooQuote("SI=F"),
+    getYahooQuote("DX-Y.NYB", "yahoo.index", 300),
+    getYahooQuote("^TNX", "yahoo.index", 300),
+    getYahooQuote("GC=F", "yahoo.futures", 300),
+    getYahooQuote("CL=F", "yahoo.futures", 300),
+    getYahooQuote("SI=F", "yahoo.futures", 300),
   ])
-  return { dxy, yield10y, gold, oil, silver }
+  return {
+    dxy: dxy?.price ?? null,
+    yield10y: yield10y?.price ?? null,
+    gold: gold?.price ?? null,
+    oil: oil?.price ?? null,
+    silver: silver?.price ?? null,
+  }
 }
 
 export function formatIntermarketForContext(snap: IntermarketSnapshot): string {

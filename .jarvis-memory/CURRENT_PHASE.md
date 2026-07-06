@@ -28,15 +28,30 @@ Plan: `/Users/wyattrantz/.claude/plans/ok-i-want-to-sprightly-puppy.md`
 | 11.1 | phase-11.1/env-audit-housekeeping | ✅ merged (#59) |
 | 11.2 | phase-11.2/quote-freshness-core | ✅ merged (#60) |
 | 11.3 | phase-11.3/finnhub-provider (gated: FINNHUB_API_KEY in Vercel — **still not added**) | queued |
-| 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ this PR |
-| 11.5 | phase-11.5/futures-indexes-catalog | queued |
+| 11.4 | phase-11.4/alpaca-options-chain (done before 11.3 — key not gated) | ✅ merged (#61) |
+| 11.5 | phase-11.5/futures-indexes-catalog | ✅ this PR |
 | 11.6 | phase-11.6/instrument-model | queued |
 | 11.7 | phase-11.7/markets-page | queued |
 | 11.8 | phase-11.8/watchlist-universe | queued |
 | 11.9 | phase-11.9/llm-chain-and-api-audit | queued |
 | 11.10 | phase-11.10/mcp-markets-tool | queued |
 
-## This PR (11.4) — Alpaca options chain
+## This PR (11.5) — futures + indexes catalog
+
+- `yahoo.ts` — shared budget-aware Yahoo chart fetcher → `MarketQuote` with
+  honest delayed meta; rides the 11.2 stale-shadow cache.
+- `futures.ts` — 11 continuous contracts (ES NQ YM RTY GC SI CL NG ZN ZB 6E).
+- `indexes.ts` — ^GSPC ^NDX ^DJI ^RUT ^VIX ^TNX + **DX-Y.NYB** (Yahoo's
+  `^DXY` is dead — price=None since 2019 — so intermarket `dxy` had been
+  silently null; fixed).
+- `instruments/proxies.ts` — future→real-time-ETF pairing table (see
+  DECISIONS.md 2026-07-05 entry).
+- `intermarket.ts` refactored onto the shared fetcher (same exported shape).
+- quality specs `yahoo.futures` / `yahoo.index` (validate shape + that meta
+  never claims realtime) + gated wrappers.
+- Live-verified: 11/11 futures, 7/7 indexes, dxy=100.945.
+
+## Previous PR (11.4) — Alpaca options chain
 
 - `options-math.ts` — pure, provider-agnostic positioning math extracted from
   the old Yahoo-only path: `computeMaxPain`, `computePcRatio`, `computeGex`,

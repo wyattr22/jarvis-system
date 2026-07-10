@@ -105,6 +105,8 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
 
   if (!base.enabled) {
     base.tookMs = Date.now() - started
+    // Heartbeat even when disarmed — the ops agent watches this actor.
+    await auditLog("auto-execute", "cycle_skipped_disabled", { promoted }).catch(() => {})
     return base
   }
 

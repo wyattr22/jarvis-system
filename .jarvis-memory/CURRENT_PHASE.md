@@ -15,8 +15,8 @@
 | 12.6 | Adjustable backtest (strategy builder) | ✅ merged (#77) |
 | 12.7 | Shadow vs live comparison | ✅ merged (#78) |
 | 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |
-| 12.9 | Council transparency: orchestrator records per-agent transcript to agent_outputs; /api/council/deliberations; DELIBERATIONS timeline on /council (Researcher → walk-forward → critics w/ critiques → risk verdict → decision, plain English) | ✅ this PR |
-| 12.10 | Humanize meta-decisions + audit log | queued |
+| 12.9 | Council transparency (deliberation timeline) | ✅ merged (#79) |
+| 12.10 | Humanized audit log + meta-decisions: plain-English sentence per action slug (lib/audit/humanize.ts), friendly actor names, readable key/value details, TYPE 1/2 → FALSE ALARMS / MISSED WINNERS. **Bug fix: audit-log API selected non-existent created_at column — page was broken since it shipped** | ✅ this PR |
 | 12.11 | UI polish pass (user request mid-phase) | queued |
 
 ## Previous phase (11) — Full Market Visibility (COMPLETE, deployed)

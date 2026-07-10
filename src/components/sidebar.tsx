@@ -53,17 +53,18 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {groups.map((group) => (
-          <div key={group} className="mb-4">
-            <p className="px-4 mb-1 text-[10px] font-medium tracking-[0.15em] text-muted-foreground">
+        {groups.map((group, gi) => (
+          <div key={group} className={gi > 0 ? "mt-4 pt-4 border-t border-border/60" : ""}>
+            <p className="px-4 mb-1.5 text-[10px] font-medium tracking-[0.15em] text-muted-foreground/80">
               {GROUP_LABELS[group]}
             </p>
             {NAV.filter((n) => n.group === group).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={path === item.href ? "page" : undefined}
                 className={cn(
-                  "flex items-center px-4 py-1.5 text-xs tracking-[0.1em] transition-colors",
+                  "flex items-center px-4 py-2 text-xs tracking-[0.1em] transition-colors",
                   path === item.href || path.startsWith(item.href + "/")
                     ? "text-primary border-l-2 border-primary bg-primary/5"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border-l-2 border-transparent"

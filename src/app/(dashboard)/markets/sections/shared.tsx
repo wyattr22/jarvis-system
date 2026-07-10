@@ -24,17 +24,17 @@ export function fmtPrice(p: number, digits?: number): string {
 }
 
 export const tileStyle: React.CSSProperties = {
-  background: "#0d131c",
-  border: "1px solid #1f2937",
-  borderRadius: 8,
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
   padding: "10px 14px",
   minWidth: 132,
 }
 
 export function ErrorNote({ what }: { what: string }) {
   return (
-    <div style={{ color: "#9ca3af", fontSize: 12, padding: 12, border: "1px dashed #1f2937", borderRadius: 8 }}>
-      {what} unavailable right now — provider unreachable and no cached copy yet.
+    <div style={{ color: "#9ca3af", fontSize: 12, padding: 12, border: "1px dashed var(--border)", borderRadius: 8 }}>
+      {what} unavailable right now. The provider didn't answer and nothing is cached yet — it usually recovers on the next refresh.
     </div>
   )
 }

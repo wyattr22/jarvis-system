@@ -121,11 +121,11 @@ export function ChartModal() {
         onClick={e => e.stopPropagation()}
         style={{
           width: "min(1100px, 96vw)", height: "min(680px, 86vh)",
-          background: "#080d14", border: "1px solid #1f2937", borderRadius: 10,
+          background: "var(--background)", border: "1px solid var(--border)", borderRadius: 10,
           display: "flex", flexDirection: "column", overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderBottom: "1px solid #1f2937" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderBottom: "1px solid var(--border)" }}>
           <b style={{ color: "#e5e7eb", fontSize: 13 }}>{symbol}</b>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <button

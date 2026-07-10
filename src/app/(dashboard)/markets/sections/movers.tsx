@@ -15,7 +15,7 @@ function MoverList({ title, color, items }: {
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <tbody>
           {items.map(m => (
-            <tr key={m.symbol} style={{ borderBottom: "1px solid #111827" }}>
+            <tr key={m.symbol} style={{ borderBottom: "1px solid var(--muted)" }}>
               <td style={{ padding: "4px 0" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <ChartTile symbol={m.symbol}>

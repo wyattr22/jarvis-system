@@ -26,7 +26,7 @@ const SECTOR_LABELS: Record<string, string> = {
 export function heatCellStyle(pct: number): { background: string; color: string } {
   const capped = Math.max(-2, Math.min(2, pct))
   const alpha = Math.abs(capped) / 2
-  if (alpha < 0.05) return { background: "#111827", color: "#e5e7eb" }
+  if (alpha < 0.05) return { background: "var(--muted)", color: "#e5e7eb" }
   const pole = capped > 0 ? "0, 163, 125" : "230, 69, 69" // #00a37d / #e64545
   return {
     background: `rgba(${pole}, ${(0.15 + 0.5 * alpha).toFixed(2)})`,

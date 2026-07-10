@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { DECISION_TYPE_PLAIN, ERROR_EXPLAIN } from "@/lib/audit/humanize"
 import { Badge } from "@/components/ui/badge"
 
 type MetaDecision = {
@@ -53,6 +54,9 @@ export default function MetaDecisionsPage() {
         <p className="text-xs text-muted-foreground mt-1">
           Meta-Agent proposals: prompt updates, weight adjustments, spawn/kill agents
         </p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            FALSE ALARMS = the agent said act and it lost · MISSED WINNERS = the agent said skip and it would have won
+          </p>
       </div>
 
       {loading ? (
@@ -82,7 +86,7 @@ export default function MetaDecisionsPage() {
                   </span>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`text-[9px] ${TYPE_COLOR[d.decision_type] ?? ""}`}>
-                      {d.decision_type.replace(/_/g, " ").toUpperCase()}
+                      {(DECISION_TYPE_PLAIN[d.decision_type]?.label ?? d.decision_type.replace(/_/g, " ")).toUpperCase()}
                     </Badge>
                     <Badge variant="outline" className={`text-[9px] ${STATUS_COLOR[d.status] ?? ""}`}>
                       {d.status.toUpperCase()}
@@ -118,8 +122,8 @@ export default function MetaDecisionsPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <MiniStat label="N OUTCOMES" value={ev.n_outcomes} />
                         <MiniStat label="ACCURACY" value={`${(ev.accuracy * 100).toFixed(0)}%`} />
-                        <MiniStat label="TYPE 1 ERRORS" value={ev.type_1_errors} />
-                        <MiniStat label="TYPE 2 ERRORS" value={ev.type_2_errors} />
+                        <span title={ERROR_EXPLAIN.type1}><MiniStat label="FALSE ALARMS" value={ev.type_1_errors} /></span>
+                        <span title={ERROR_EXPLAIN.type2}><MiniStat label="MISSED WINNERS" value={ev.type_2_errors} /></span>
                       </div>
                     </div>
                   )
@@ -132,9 +136,14 @@ export default function MetaDecisionsPage() {
                   return (
                     <div>
                       <p className="text-[10px] text-muted-foreground tracking-widest mb-1">PROPOSED CHANGE</p>
-                      <pre className="text-[10px] text-muted-foreground font-mono bg-secondary rounded p-2 overflow-x-auto">
-                        {JSON.stringify(change, null, 2)}
-                      </pre>
+                      <div className="space-y-1">
+                        {Object.entries(change as Record<string, unknown>).map(([k, v]) => (
+                          <div key={k} className="flex gap-2 text-[10px]">
+                            <span className="text-muted-foreground tracking-widest uppercase w-40 flex-shrink-0">{k.replace(/_/g, " ")}</span>
+                            <span className="text-foreground/80 break-all">{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )
                 } catch { return null }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { humanizeAction, ACTOR_LABELS } from "@/lib/audit/humanize"
 
 type AuditEntry = {
   id: string
@@ -122,21 +123,29 @@ export default function AuditLogPage() {
                   className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-secondary/30 transition-colors"
                 >
                   <span className="text-[10px] text-muted-foreground w-32 flex-shrink-0 font-mono">
-                    {new Date(e.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    {new Date(e.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </span>
-                  <span className={`text-[10px] font-medium w-16 flex-shrink-0 tracking-widest ${ACTOR_COLOR[e.actor] ?? "text-foreground"}`}>
-                    {e.actor.toUpperCase()}
+                  <span className={`text-[10px] font-medium w-36 flex-shrink-0 tracking-widest ${ACTOR_COLOR[e.actor] ?? "text-foreground"}`}>
+                    {(ACTOR_LABELS[e.actor] ?? e.actor).toUpperCase()}
                   </span>
-                  <span className="text-xs text-foreground">{e.action}</span>
+                  <span className="text-xs text-foreground" title={e.action}>
+                    {humanizeAction(e.action, details)}
+                  </span>
                   {details && (
                     <span className="ml-auto text-[10px] text-muted-foreground">{isExpanded ? "▲" : "▼"}</span>
                   )}
                 </button>
                 {isExpanded && details && (
-                  <div className="px-3 pb-3 bg-secondary/20">
-                    <pre className="text-[10px] text-muted-foreground font-mono overflow-x-auto">
-                      {JSON.stringify(details, null, 2)}
-                    </pre>
+                  <div className="px-3 pb-3 bg-secondary/20 space-y-1 pt-2">
+                    {Object.entries(details).map(([k, v]) => (
+                      <div key={k} className="flex gap-2 text-[10px]">
+                        <span className="text-muted-foreground tracking-widest uppercase w-40 flex-shrink-0">{k.replace(/_/g, " ")}</span>
+                        <span className="text-foreground/80 font-mono break-all">
+                          {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                        </span>
+                      </div>
+                    ))}
+                    <p className="text-[9px] text-muted-foreground/60 pt-1">raw action: {e.action}</p>
                   </div>
                 )}
               </div>

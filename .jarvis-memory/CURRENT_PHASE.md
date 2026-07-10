@@ -1,6 +1,6 @@
 # Current Phase
 
-**Phase 12 — Trading Engine Overhaul (started 2026-07-06).** Phase 11 complete.
+**Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
 ## Phase 12 step table (user-driven scope)
 
@@ -16,8 +16,8 @@
 | 12.7 | Shadow vs live comparison | ✅ merged (#78) |
 | 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |
 | 12.9 | Council transparency (deliberation timeline) | ✅ merged (#79) |
-| 12.10 | Humanized audit log + meta-decisions: plain-English sentence per action slug (lib/audit/humanize.ts), friendly actor names, readable key/value details, TYPE 1/2 → FALSE ALARMS / MISSED WINNERS. **Bug fix: audit-log API selected non-existent created_at column — page was broken since it shipped** | ✅ this PR |
-| 12.11 | UI polish pass (user request mid-phase) | queued |
+| 12.10 | Humanized audit log + meta-decisions (+ audit API column fix) | ✅ merged (#80) |
+| 12.11 | UI polish: /markets unified onto the CSS token system (was near-miss hexes), page/panel headers match the app-wide type scale, :focus-visible ring, prefers-reduced-motion, tile hover glow, sidebar group dividers + aria-current + larger targets | ✅ this PR |
 
 ## Previous phase (11) — Full Market Visibility (COMPLETE, deployed)
 

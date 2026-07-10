@@ -16,10 +16,8 @@ export const dynamic = "force-dynamic"
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: 28 }}>
-      <h2 style={{ fontSize: 11, letterSpacing: "0.15em", color: "#9ca3af", marginBottom: 10, fontWeight: 600 }}>
-        {title}
-      </h2>
+    <section className="mb-7">
+      <h2 className="text-[10px] tracking-[0.15em] text-muted-foreground font-medium mb-2.5">{title}</h2>
       {children}
     </section>
   )
@@ -28,13 +26,8 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 function Skeleton({ height = 72 }: { height?: number }) {
   return (
     <div
-      style={{
-        height,
-        background: "#0d131c",
-        border: "1px solid #1f2937",
-        borderRadius: 8,
-        animation: "pulse 1.5s ease-in-out infinite",
-      }}
+      className="animate-pulse rounded border"
+      style={{ height, background: "var(--card)" }}
     />
   )
 }
@@ -43,13 +36,13 @@ export default function MarketsPage() {
   return (
     <div style={{ padding: 24, color: "#e5e7eb" }}>
       <ChartModal />
-      <h1 style={{ fontSize: 22, marginBottom: 4 }}>Markets</h1>
-      <p style={{ color: "#9ca3af", marginBottom: 24 }}>
-        Complete market visibility — every price carries an honest freshness badge.
-        Click any tile for its TradingView chart. Futures and indexes are delayed
-        (no free real-time CME/index data exists); each future is paired with its
-        real-time ETF proxy.
-      </p>
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-sm font-medium tracking-[0.15em] text-primary uppercase">Markets</h1>
+        <p className="text-xs text-muted-foreground mt-1">
+          Every price wears an honest freshness badge · click any tile to open its chart ·
+          futures and indexes are delayed (no free real-time feed exists), each paired with a live ETF proxy
+        </p>
+      </div>
 
       <Panel title="INDEXES">
         <Suspense fallback={<Skeleton />}>

@@ -3,8 +3,8 @@ import { heatCellStyle } from "./sector-heatmap"
 
 describe("heatCellStyle", () => {
   it("uses the neutral surface near zero", () => {
-    expect(heatCellStyle(0).background).toBe("#111827")
-    expect(heatCellStyle(0.05).background).toBe("#111827")
+    expect(heatCellStyle(0).background).toBe("var(--muted)")
+    expect(heatCellStyle(0.05).background).toBe("var(--muted)")
   })
 
   it("uses the green pole for gains and red pole for losses", () => {

@@ -37,7 +37,7 @@ export async function FuturesStrip() {
                 <span style={{ fontSize: 12, color: changeColor(fut.changePct) }}>{fmtPct(fut.changePct)}</span>
               </div>
               {proxy && proxy.price > 0 && (
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, borderTop: "1px solid #1f2937", paddingTop: 6 }}>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 6 }}>
                   {spec.proxy} {fmtPrice(proxy.price)}{" "}
                   <span style={{ color: changeColor(proxy.changePct) }}>{fmtPct(proxy.changePct)}</span>{" "}
                   <FreshnessBadge meta={proxy.meta} />

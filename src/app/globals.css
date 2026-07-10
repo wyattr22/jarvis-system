@@ -60,12 +60,33 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
-/* Clickable market tiles (12.1) — subtle lift + border glow on hover */
+/* Clickable market tiles (12.1, refined 12.11) */
 .jarvis-tile {
   cursor: pointer;
-  transition: transform 0.12s ease, filter 0.12s ease;
+  border-radius: var(--radius);
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease;
 }
 .jarvis-tile:hover {
   transform: translateY(-1px);
-  filter: brightness(1.15);
+  filter: brightness(1.12);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+/* Accessibility floor (12.11): visible keyboard focus everywhere */
+:focus-visible {
+  outline: 1px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Respect reduced-motion: keep state changes, drop movement */
+@media (prefers-reduced-motion: reduce) {
+  .jarvis-tile,
+  .jarvis-tile:hover {
+    transition: none;
+    transform: none;
+  }
+  .animate-pulse {
+    animation: none;
+  }
 }

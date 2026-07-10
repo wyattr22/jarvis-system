@@ -71,6 +71,10 @@
     {
       "path": "/api/agents/ops",
       "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/agents/research",
+      "schedule": "30 12 * * 1-5"
     }
   ]
 }

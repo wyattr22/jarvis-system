@@ -7,8 +7,8 @@
 | Step | What | Status |
 |---|---|---|
 | 13.1 | Ops agent: daily health monitor + push alerts (also fixed auto-cycle heartbeat gap) | ✅ merged (#82) |
-| 13.2a | Reputable-only news: mass media (CNBC/MarketWatch/etc.) replaced with Fed releases, fund research (Alpha Architect, Meb Faber), and 8 market podcasts — every feed probed live; per-feed cap 10; per-ticker Yahoo headlines kept for lookups | ✅ this PR |
-| 13.2 | Research agent: daily pre-market synthesis note from the reputable sources | queued |
+| 13.2a | Reputable-only news sources | ✅ merged (#83) |
+| 13.2 | Research agent: pre-market LLM note (regime / what matters / opportunity / disconfirming signal) from reputable sources + intermarket + options + universe; stored in research_notes + semantic store; daily 12:30 UTC cron | ✅ this PR |
 | 13.3 | Daily digest: "what Jarvis thought and did" push + page | queued |
 
 ## Phase 12 step table (user-driven scope)

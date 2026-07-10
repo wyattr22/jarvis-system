@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Deliberations } from "@/components/deliberations"
 
 type Agent = {
   id: string
@@ -113,6 +114,8 @@ export default function CouncilPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <Deliberations />
         {/* Agent list */}
         <div className="space-y-4">
           {loading ? (

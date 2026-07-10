@@ -41,17 +41,21 @@ const ALLOWED_HOSTS = new Set<string>([
 
   // Display-only news RSS — feeds the /news page UI, NEVER enters predictive model
   // (the source quality gate will tag these as confidence=0 for any predictive use)
-  "feeds.marketwatch.com",
-  "search.cnbc.com",
-  "feeds.reuters.com",
-  "www.thestreet.com",
-  "finance.yahoo.com",
+  // Reputable-only news policy (13.2a): primary sources, fund research,
+  // market podcasts. Mass-media hosts removed at user request.
+  // (feeds.finance.yahoo.com stays: per-ticker headline lookups only,
+  //  not editorial content — used by fetchTickerRSS.)
   "feeds.finance.yahoo.com",
-  "www.investing.com",
-  "www.nasdaq.com",
-  "www.fool.com",
-  "www.barrons.com",
-  "feed.businesswire.com",
+  "www.federalreserve.gov",
+  "alphaarchitect.com",
+  "mebfaber.com",
+  "www.calculatedriskblog.com",
+  "feed.podbean.com",
+  "feeds.megaphone.fm",
+  "feeds.transistor.fm",
+  "www.omnycontent.com",
+  "anchor.fm",
+  "markethuddle.com",
   // Internal infra
   dbHost(process.env.TURSO_DATABASE_URL) ?? "",
   dbHost(process.env.UPSTASH_REDIS_REST_URL) ?? "",

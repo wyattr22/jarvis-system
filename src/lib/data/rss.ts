@@ -90,20 +90,29 @@ function parseRSS(xml: string, sourceName: string): RSSItem[] {
       })
     }
   }
-  return items
+  // Podcast feeds ship their full back-catalog (1,000+ episodes) — only the
+  // newest few carry current market signal.
+  return items.slice(0, 10)
 }
 
 const RSS_SOURCES: { url: string; name: string }[] = [
-  { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', name: 'MarketWatch' },
-  { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', name: 'CNBC' },
-  { url: 'https://feeds.reuters.com/reuters/businessNews', name: 'Reuters' },
-  { url: 'https://www.thestreet.com/rss/main.xml', name: 'TheStreet' },
-  { url: 'https://finance.yahoo.com/news/rssindex', name: 'Yahoo Finance' },
-  { url: 'https://www.investing.com/rss/news_283.rss', name: 'Investing.com' },
-  { url: 'https://www.nasdaq.com/feed/rssoutbound?category=Markets', name: 'Nasdaq' },
-  { url: 'https://www.fool.com/feeds/index.aspx', name: 'Motley Fool' },
-  { url: 'https://www.barrons.com/xml/rss/3_7514.xml', name: 'Barrons' },
-  { url: 'https://feed.businesswire.com/rss/home/?rss=G1&rssid=rss_service_news', name: 'Business Wire' },
+  // Reputable-only policy (13.2a, user decision): primary sources, fund
+  // managers' own research, and daily/weekly market podcasts. No mass-media
+  // outlets. Every feed URL was probed live before landing here.
+  // ── Primary / institutional research ──
+  { url: 'https://www.federalreserve.gov/feeds/press_all.xml', name: 'Federal Reserve' },
+  { url: 'https://alphaarchitect.com/feed/', name: 'Alpha Architect' },
+  { url: 'https://mebfaber.com/feed/', name: 'Meb Faber Research' },
+  { url: 'https://www.calculatedriskblog.com/feeds/posts/default?alt=rss', name: 'Calculated Risk' },
+  // ── Daily/weekly market podcasts (titles + shownotes) ──
+  { url: 'https://feed.podbean.com/macrovoices/feed.xml', name: 'MacroVoices' },
+  { url: 'https://feeds.megaphone.fm/forwardguidance', name: 'Forward Guidance' },
+  { url: 'https://feeds.transistor.fm/making-sense', name: 'Eurodollar University' },
+  { url: 'https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/8a94442e-5a74-4fa2-8b8d-ae27003a8d6b/982f5071-765c-403d-969d-ae27003a8d83/podcast.rss', name: 'Odd Lots' },
+  { url: 'https://anchor.fm/s/9a1dfac/podcast/rss', name: 'Excess Returns' },
+  { url: 'https://feeds.megaphone.fm/TIFM6133783130', name: 'Meb Faber Show' },
+  { url: 'https://feeds.megaphone.fm/TCP4771071679', name: 'The Compound & Friends' },
+  { url: 'https://markethuddle.com/feed/podcast/', name: 'Market Huddle' },
 ]
 
 async function fetchRSSFeed(url: string, name: string): Promise<RSSItem[]> {

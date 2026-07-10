@@ -2,6 +2,15 @@
 
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
+## Phase 13 — Agent crew (started 2026-07-10)
+
+| Step | What | Status |
+|---|---|---|
+| 13.1 | Ops agent: daily health monitor + push alerts (also fixed auto-cycle heartbeat gap) | ✅ merged (#82) |
+| 13.2a | Reputable-only news: mass media (CNBC/MarketWatch/etc.) replaced with Fed releases, fund research (Alpha Architect, Meb Faber), and 8 market podcasts — every feed probed live; per-feed cap 10; per-ticker Yahoo headlines kept for lookups | ✅ this PR |
+| 13.2 | Research agent: daily pre-market synthesis note from the reputable sources | queued |
+| 13.3 | Daily digest: "what Jarvis thought and did" push + page | queued |
+
 ## Phase 12 step table (user-driven scope)
 
 | Step | What | Status |

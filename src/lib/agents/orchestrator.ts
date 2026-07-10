@@ -7,6 +7,7 @@ import { runRiskManager } from "./risk-manager"
 import { runMetaAgent } from "./meta-agent"
 import { runWalkForward } from "@/lib/validation/walk-forward"
 import { auditLog } from "@/lib/guardrails/audit"
+import { recordAgentOutput } from "./transcript"
 
 export interface OrchestrationResult {
   proposalId: string
@@ -54,6 +55,18 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
   const proposalId = proposalRow.rows[0]?.id as string
   if (!proposalId) return null
 
+  // Deliberation transcript (12.9): every stage becomes an agent_outputs row
+  await recordAgentOutput("observer", "patterns", {
+    pattern_count: patterns.length,
+    patterns: patterns.slice(0, 5),
+    mode: patterns.length === 0 ? "brainstorm (no significant patterns found)" : "pattern-driven",
+  }, proposalId)
+  await recordAgentOutput("researcher", "proposal", {
+    hypothesis: proposal.hypothesis,
+    proposed_change: proposal.proposed_change,
+    evidence: proposal.evidence,
+  }, proposalId)
+
   // Step 3: Walk-forward validation
   const wfResult = await runWalkForward(strategyId)
   const walkForwardPass = wfResult.passedMinWindows && wfResult.consistent && wfResult.avgR > 0
@@ -62,6 +75,13 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
     sql: "UPDATE proposals SET walk_forward_result_json = ? WHERE id = ?",
     args: [JSON.stringify(wfResult), proposalId],
   })
+  await recordAgentOutput("validator", "walk_forward", {
+    passed: walkForwardPass,
+    windows: wfResult.windows.length,
+    avgR: wfResult.avgR,
+    avgWinRate: wfResult.avgWinRate,
+    consistent: wfResult.consistent,
+  }, proposalId)
 
   // Step 4: Critics in parallel
   const criticResult = await runCriticEnsemble(proposal)
@@ -70,6 +90,12 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
     sql: "UPDATE proposals SET critic_scores_json = ?, ensemble_confidence = ? WHERE id = ?",
     args: [JSON.stringify(criticResult.scores), criticResult.ensembleScore, proposalId],
   })
+  await recordAgentOutput("critic", "critiques", {
+    ensemble_score: criticResult.ensembleScore,
+    agreement: criticResult.agreement,
+    low_diversity: criticResult.lowDiversity,
+    critics: criticResult.scores,
+  }, proposalId)
 
   // Step 5: Risk Manager
   const account = await getAccountEquity()
@@ -79,6 +105,10 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
     sql: "UPDATE proposals SET risk_verdict = ? WHERE id = ?",
     args: [`${riskResult.verdict}: ${riskResult.reason}`, proposalId],
   })
+  await recordAgentOutput("risk-manager", "risk_verdict", {
+    verdict: riskResult.verdict,
+    reason: riskResult.reason,
+  }, proposalId)
 
   // Step 6: Orchestrator synthesis
   let overallStatus: OrchestrationResult["overallStatus"]
@@ -113,6 +143,11 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
       args: [reason, proposalId],
     })
   }
+
+  await recordAgentOutput("orchestrator", "synthesis", {
+    overall_status: overallStatus,
+    reason,
+  }, proposalId)
 
   await auditLog("orchestrator", "council_cycle_complete", {
     strategyId, proposalId, overallStatus, reason,

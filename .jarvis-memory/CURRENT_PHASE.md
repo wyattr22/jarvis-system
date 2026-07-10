@@ -13,9 +13,9 @@
 | 12.5 | Features: live compute any symbol | ✅ merged (#75) |
 | 12.8 | Auto-execute loop (done out of order — highest user value): signal→opportunity promotion + auto cycle behind `auto_execute` master switch (default OFF, /risk-config), market-hours gate, Risk-Manager veto, ≤3 orders/cycle, `/api/execution/auto-cycle` pinger endpoint, AUTO-EXECUTE badge on /bot. Pinger recipe in domain/api-budgets.md | ✅ this PR |
 | 12.6 | Adjustable backtest (strategy builder) | ✅ merged (#77) |
-| 12.7 | Shadow vs live: simulateSignalOutcome against real bars for EVERY signal vs executed trades; /api/analysis/shadow; panel on /experiments with validated 2-series curve + UNEXECUTED R stat | ✅ this PR |
+| 12.7 | Shadow vs live comparison | ✅ merged (#78) |
 | 12.8 | Auto-execute loop on paper + master switch (user chose: auto-execute, cron-job.org pinger for intraday cadence) | queued |
-| 12.9 | Council transparency — persist + render deliberation | queued |
+| 12.9 | Council transparency: orchestrator records per-agent transcript to agent_outputs; /api/council/deliberations; DELIBERATIONS timeline on /council (Researcher → walk-forward → critics w/ critiques → risk verdict → decision, plain English) | ✅ this PR |
 | 12.10 | Humanize meta-decisions + audit log | queued |
 | 12.11 | UI polish pass (user request mid-phase) | queued |
 

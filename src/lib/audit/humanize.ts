@@ -33,6 +33,9 @@ const TEMPLATES: Record<string, (d: Details) => string> = {
   prompt_updated: d => `Agent prompt updated${d.agent ? ` for ${d.agent}` : ""} (meta-agent enforcement)`,
   weight_adjusted: d => `Agent voting weight adjusted${d.agent ? ` for ${d.agent}` : ""}`,
   apply_failed: () => "Meta-agent enforcement step failed — nothing was changed",
+  ops_report: d => `Daily health check: system is ${d.status ?? "?"}${n(d.issues) ? ` (${n(d.issues)} issue${n(d.issues) === 1 ? "" : "s"})` : ""}`,
+  research_note_written: d => `Morning research note written (${d.regime ?? "regime unclassified"})`,
+  daily_digest_written: () => "Evening debrief written and pushed",
 }
 
 export function humanizeAction(action: string, details: Details | null): string {
@@ -59,6 +62,9 @@ export const ACTOR_LABELS: Record<string, string> = {
   "allocation-outcomes": "Order reconciler",
   "time-stop-monitor": "Time-stop monitor",
   opportunities: "Opportunity feed",
+  "ops-agent": "Ops agent",
+  "research-agent": "Research agent",
+  "digest-agent": "Digest agent",
 }
 
 // Meta-decision jargon → plain English (12.10)

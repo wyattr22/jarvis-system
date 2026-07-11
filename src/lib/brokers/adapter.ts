@@ -66,6 +66,8 @@ export type AccountSnapshot = {
   buying_power: number
   day_pnl: number
   currency: string
+  /** Broker's rolling day-trade count (PDT guard, 14.2); 0 when unsupported */
+  daytrade_count: number
 }
 
 export interface BrokerAdapter {

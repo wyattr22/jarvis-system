@@ -2,6 +2,14 @@
 
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
+## Phase 14 — Optimization (started 2026-07-10)
+
+| Step | What | Status |
+|---|---|---|
+| 14.1 | Broad-coverage news back alongside reputable core (user request; Reuters feed dead, skipped) | ✅ merged (#86) |
+| 14.2 | Bracket exits + PDT guard: auto-execute derives take-profit from expected R → full bracket at the broker; day-trade guard (<$25k equity, 3 DTs) with audit + humanized slug | ✅ this PR |
+| 14.3+ | Candidates (user to prioritize): parameter auto-optimizer sweep via backtester; win-prob calibration from shadow outcomes; /universe page; persist backtest runs; charts page → universe symbols; git-connect Vercel; real embeddings (KNOWN_ISSUES) | queued |
+
 ## Phase 13 — Agent crew (started 2026-07-10)
 
 | Step | What | Status |

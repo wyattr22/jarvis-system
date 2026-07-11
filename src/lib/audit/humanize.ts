@@ -18,6 +18,7 @@ const TEMPLATES: Record<string, (d: Details) => string> = {
   universe_scan_complete: d => `Whole-market scan: ${n(d.scanned) || "?"} symbols checked, kept the top ${n(d.universeSize) || "?"}`,
   cycle_complete: d => `Auto-execute cycle ran: ${n(d.executed) || 0} order${n(d.executed) === 1 ? "" : "s"} placed (${n(d.promoted) || 0} signals promoted to opportunities)`,
   cycle_market_closed: () => "Auto-execute skipped — market is closed",
+  cycle_pdt_guard: d => `Auto-execute paused by the day-trade guard (${n(d.daytrades)} day trades used, equity under $25k)`,
   cycle_skipped_disabled: d => `Auto-execute is switched OFF — ${n(d.promoted) || 0} signal${n(d.promoted) === 1 ? "" : "s"} promoted for manual review only`,
   cycle_vetoed: d => `Auto-execute stopped by the Risk Manager${d.reason ? ` — ${d.reason}` : ""}`,
   status_change: d => `Opportunity ${d.id ?? ""} moved to "${d.status ?? "?"}"`,

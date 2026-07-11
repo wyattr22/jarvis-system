@@ -46,3 +46,20 @@ describe("signalToOpportunity", () => {
     expect(opp.thesis).toContain("sig-1")
   })
 })
+
+import { takeProfitFor } from "./auto-cycle"
+
+describe("takeProfitFor", () => {
+  it("derives long and short targets from expected R", () => {
+    expect(takeProfitFor("long", 100, 97, 2)).toBe(106)
+    expect(takeProfitFor("short", 100, 103, 2)).toBe(94)
+  })
+
+  it("returns undefined when inputs cannot support a target", () => {
+    expect(takeProfitFor("long", undefined, 97, 2)).toBeUndefined()
+    expect(takeProfitFor("long", 100, undefined, 2)).toBeUndefined()
+    expect(takeProfitFor("long", 100, 97, undefined)).toBeUndefined()
+    expect(takeProfitFor("long", 100, 100, 2)).toBeUndefined() // zero risk
+    expect(takeProfitFor("short", 1, 4, 2)).toBeUndefined() // negative target
+  })
+})

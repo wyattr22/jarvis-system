@@ -107,6 +107,7 @@ export const AlpacaAdapter: BrokerAdapter = {
       buying_power:  Number(a.buying_power),
       day_pnl:       Number(a.equity) - Number(a.last_equity),
       currency:      String(a.currency ?? "USD"),
+      daytrade_count: Number(a.daytrade_count ?? 0),
     }
   },
 

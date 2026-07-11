@@ -23,6 +23,25 @@ import { db } from "@/lib/db/client"
 
 const SIGNAL_MAX_AGE_MS = 6 * 60 * 60 * 1000
 
+/**
+ * Pure (14.2): derive the bracket take-profit from the opportunity's own
+ * expected R. Returns undefined when inputs can't support a target — the
+ * order then goes out with stop-only protection, as before.
+ */
+export function takeProfitFor(
+  side: "long" | "short",
+  entry?: number,
+  stop?: number,
+  expectedR?: number,
+): number | undefined {
+  if (!entry || !stop || !expectedR || expectedR <= 0) return undefined
+  const risk = Math.abs(entry - stop)
+  if (risk <= 0) return undefined
+  const raw = side === "long" ? entry + expectedR * risk : entry - expectedR * risk
+  if (raw <= 0) return undefined
+  return Math.round(raw * 100) / 100
+}
+
 interface SignalRow {
   id: string
   instrument: string
@@ -141,6 +160,19 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
     return base
   }
 
+  // PDT guard (14.2): under $25k equity a real account is restricted after
+  // 3 day-trades in 5 days. Paper doesn't enforce it, but building the guard
+  // now means flipping to live later doesn't change behavior.
+  let daytrades = 0
+  try { daytrades = (await equityAdapter.account()).daytrade_count } catch { /* 0 */ }
+  if (equity < 25_000 && daytrades >= 3) {
+    base.vetoed = true
+    base.vetoReason = `PDT guard: ${daytrades} day trades used with equity under $25k`
+    base.tookMs = Date.now() - started
+    await auditLog("auto-execute", "cycle_pdt_guard", { daytrades, equity }).catch(() => {})
+    return base
+  }
+
   const perOppAllow = new Map(veto.per_opportunity.map(p => [p.opportunity_id, p]))
   const eligible = plan.rows
     .filter(r => r.status === "approved" && perOppAllow.get(r.opportunity.id)?.allow === true)
@@ -156,6 +188,9 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
         qty: row.sizing.size,
         type: "market",
         stop_price: opp.stop_hint,
+        // Full bracket (14.2): exit management lives AT THE BROKER, not in
+        // a monitor that might miss a cycle.
+        take_profit: takeProfitFor(opp.side, opp.entry_hint, opp.stop_hint, opp.expected_r),
         time_in_force: "day",
         client_order_id: `opp_${opp.id}`,
       })

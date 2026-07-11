@@ -46,6 +46,15 @@ const ALLOWED_HOSTS = new Set<string>([
   // (feeds.finance.yahoo.com stays: per-ticker headline lookups only,
   //  not editorial content — used by fetchTickerRSS.)
   "feeds.finance.yahoo.com",
+  // Broad-coverage outlets re-added 14.1 (user: broader range of info)
+  "feeds.marketwatch.com",
+  "search.cnbc.com",
+  "www.thestreet.com",
+  "finance.yahoo.com",
+  "www.investing.com",
+  "www.nasdaq.com",
+  "www.barrons.com",
+  "feed.businesswire.com",
   "www.federalreserve.gov",
   "alphaarchitect.com",
   "mebfaber.com",

@@ -113,6 +113,16 @@ const RSS_SOURCES: { url: string; name: string }[] = [
   { url: 'https://feeds.megaphone.fm/TIFM6133783130', name: 'Meb Faber Show' },
   { url: 'https://feeds.megaphone.fm/TCP4771071679', name: 'The Compound & Friends' },
   { url: 'https://markethuddle.com/feed/podcast/', name: 'Market Huddle' },
+  // ── Broad-coverage outlets (re-added 14.1: breadth alongside the
+  //    reputable core; the LLM context weighs institutional sources first) ──
+  { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', name: 'MarketWatch' },
+  { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', name: 'CNBC' },
+  { url: 'https://www.thestreet.com/rss/main.xml', name: 'TheStreet' },
+  { url: 'https://finance.yahoo.com/news/rssindex', name: 'Yahoo Finance' },
+  { url: 'https://www.investing.com/rss/news_283.rss', name: 'Investing.com' },
+  { url: 'https://www.nasdaq.com/feed/rssoutbound?category=Markets', name: 'Nasdaq' },
+  { url: 'https://www.barrons.com/xml/rss/3_7514.xml', name: 'Barrons' },
+  { url: 'https://feed.businesswire.com/rss/home/?rss=G1&rssid=rss_service_news', name: 'Business Wire' },
 ]
 
 async function fetchRSSFeed(url: string, name: string): Promise<RSSItem[]> {

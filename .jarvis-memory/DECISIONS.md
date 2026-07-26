@@ -13,6 +13,58 @@ Append-only. New decisions go at the top. Format:
 
 ---
 
+## 2026-07-25 — Phase 16: rule engine as the one execution path, not a second system
+
+**Context:** `checkBotSignal`/`StrategyParams` (`src/lib/backtest/bot-strategy.ts`)
+is one hardcoded algorithm — "adjustable" only ever meant tuning numeric
+thresholds on that one fixed set of confluence rules. Nothing (human or LLM)
+could introduce genuinely new entry/exit logic. Needed a declarative format
+so a strategy candidate can be authored and backtested in one request/response
+cycle (decision, made earlier: declarative rules over sandboxed code, chosen
+specifically for that instant-iteration requirement).
+
+**Decision:** Extracted `bot-strategy.ts`'s indicator/detector math verbatim
+into `src/lib/strategy-engine/indicators.ts` (byte-identical functions,
+`bot-strategy.ts` now imports them instead of defining them locally — zero
+behavior change). Built `StrategyDefinitionSchema` (zod) — a composable
+condition tree (`gt`/`lt`/`and`/`or`/`not`/`count_at_least`/`true_when`) over
+a fixed indicator vocabulary, plus a small fixed set of stop/target
+*computation modes* (`pct`/`atr_multiple`/`structure` for stops;
+`pct`/`r_multiple`/`dol_or_pct` for targets) rather than trying to make
+every possible exit rule expressible as a boolean condition — deriving a
+price isn't a yes/no question the way "is RSI above 40" is.
+`SMC_ICT_V4_DEFINITION` expresses the existing legacy strategy as data using
+this schema, and a parity test (`interpreter.test.ts`) proves
+`evaluateStrategy()` matches `checkBotSignal(..., DEFAULT_PARAMS)` bar-for-bar
+across 5 random synthetic price paths (bias/price/sl/tp/rr/dol/rsi/slDist and
+tag arrays all compared exactly, plus a check that the test isn't vacuously
+passing on all-null output).
+
+**Why:** The interpreter is planned to become the *only* execution path
+(Phase 17 wires it into the backtest + signal engine, replacing the direct
+`checkBotSignal` calls) rather than living alongside the hardcoded version
+forever — two permanent systems would mean every future indicator
+improvement gets written twice. One nuance found while writing the parity
+test: `revTags`/`contTags` are presentational confluence labels, not
+decision-relevant outputs (the numeric fields are what drive P&L/order
+placement) — the interpreter reproduces them by collecting which
+`true_when` conditions fired specifically inside `count_at_least` groups
+(not every passing filter), which is what makes `contTags` match legacy
+exactly without hardcoding "reversal vs continuation" semantics into the
+schema itself.
+
+**Consequences:** A new indicator/detector requires adding one case to
+`computeIndicator()` in `interpreter.ts` plus a schema variant, not touching
+two separate implementations. The interpreter's `entry.biasSource` currently
+only fully supports `daily_bias`/`both` (via the existing SMC daily-bias
+engine) for anything that also wants `equilibrium`/`liquidity_raid`
+indicators or a `dol_or_pct` target — `fixed_long`/`fixed_short` skip bias
+computation entirely and those specific indicators/target mode return
+false/are rejected gracefully rather than crashing, but a genuinely
+non-SMC, non-daily-bias strategy family is more of a v2 concern.
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

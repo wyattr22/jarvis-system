@@ -15,11 +15,13 @@ import { getRiskConfig } from "@/lib/allocator/risk-config"
 import { buildPlan } from "@/lib/allocator/scorer"
 import { listOpportunities, ingestOpportunity, updateOpportunityStatus } from "@/lib/opportunities/store"
 import { getAdapter } from "@/lib/brokers"
+import type { AssetClass } from "@/lib/brokers/adapter"
 import { recordAllocation } from "@/lib/allocator/allocations"
 import { auditLog } from "@/lib/guardrails/audit"
 import { vetoAllocatorPlan } from "@/lib/agents/risk-manager"
 import { sendPushToAll } from "@/lib/push"
 import { db } from "@/lib/db/client"
+import { parseInstrument } from "@/lib/instruments/parse"
 
 const SIGNAL_MAX_AGE_MS = 6 * 60 * 60 * 1000
 
@@ -51,6 +53,11 @@ interface SignalRow {
   target: number | null
   confidence: number | null
   reasoning_json: string | null
+  /** Not yet used in the mapped opportunity — wired up in Phase 18's
+   *  capital-tier enforcement, which needs to trace an opportunity back to
+   *  the strategy that generated it. Selected here so that phase doesn't
+   *  need its own column addition to this query. */
+  strategy_id: string | null
 }
 
 // Exported for tests — pure signal→opportunity mapping.
@@ -66,7 +73,10 @@ export function signalToOpportunity(sig: SignalRow): Parameters<typeof ingestOpp
   } catch { /* keep default */ }
   return {
     source: "jarvis",
-    asset_class: "equity",
+    // Derived from the instrument's own symbology (Phase 15) rather than
+    // hardcoded — this is the one change that lets a forex/futures signal
+    // ever reach a non-equity broker adapter downstream.
+    asset_class: parseInstrument(sig.instrument).assetClass,
     instrument: sig.instrument,
     side: sig.direction === "long" ? "long" : "short",
     thesis,
@@ -83,7 +93,7 @@ export function signalToOpportunity(sig: SignalRow): Parameters<typeof ingestOpp
 
 async function promoteSignals(): Promise<number> {
   const res = await db.execute({
-    sql: `SELECT id, instrument, direction, entry, stop, target, confidence, reasoning_json
+    sql: `SELECT id, instrument, direction, entry, stop, target, confidence, reasoning_json, strategy_id
           FROM signals WHERE status = 'pending' AND created_at > ?
           ORDER BY created_at DESC LIMIT 50`,
     args: [Date.now() - SIGNAL_MAX_AGE_MS],
@@ -129,13 +139,33 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
     return base
   }
 
-  const opps = await listOpportunities({ status: "open", limit: 200 })
+  const allOpps = await listOpportunities({ status: "open", limit: 200 })
   const equityAdapter = getAdapter("equity")
 
-  // Market-hours gate: don't fire market orders into a closed book.
-  if (!(await equityAdapter.isOpen().catch(() => false))) {
+  // Market-hours gate (Phase 15): each asset class trades on its own
+  // schedule — forex runs ~24/5 while equity trades ~6.5h/day — so gating
+  // the whole cycle on equity hours would silently starve every other asset
+  // class the moment it got a real (non-stub) adapter. Check per class
+  // instead and only let an opportunity through if ITS market is open.
+  const classesInPlay = Array.from(new Set(allOpps.map(o => o.asset_class))) as AssetClass[]
+  const openByClass = new Map<AssetClass, boolean>()
+  for (const cls of classesInPlay) {
+    // getAdapter() itself throws synchronously for unregistered classes
+    // (e.g. options/prediction today) — treat that the same as "closed"
+    // rather than letting it crash the whole cycle for every asset class.
+    try {
+      openByClass.set(cls, await getAdapter(cls).isOpen())
+    } catch {
+      openByClass.set(cls, false)
+    }
+  }
+  const opps = allOpps.filter(o => openByClass.get(o.asset_class) === true)
+
+  if (opps.length === 0) {
     base.tookMs = Date.now() - started
-    await auditLog("auto-execute", "cycle_market_closed", { promoted }).catch(() => {})
+    await auditLog("auto-execute", "cycle_market_closed", {
+      promoted, classesChecked: classesInPlay,
+    }).catch(() => {})
     return base
   }
 

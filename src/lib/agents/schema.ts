@@ -1,16 +1,41 @@
 import { z } from "zod"
+import { StrategyDefinitionSchema } from "@/lib/strategy-engine/schema"
+
+// Existing 4 change types (parameter/filter/rule tweaks to an ALREADY-LIVE
+// strategy) — unchanged shape, so every proposal already in the DB stays
+// valid against this schema.
+const TweakChangeSchema = z.object({
+  type: z.enum(["add_filter", "modify_parameter", "remove_rule", "add_rule"]),
+  description: z.string(),
+  parameter: z.string().optional(),
+  old_value: z.unknown().optional(),
+  new_value: z.unknown().optional(),
+  filter_expression: z.string().optional(),
+})
+
+// New (Phase 20): a proposal that authors an entirely new strategy rather
+// than tweaking an existing one. Carries a full StrategyDefinition so the
+// orchestrator can backtest it immediately — there's no live trade history
+// for a brand-new candidate, which is exactly why this type exists as its
+// own branch rather than reusing modify_parameter's shape.
+const NewStrategyChangeSchema = z.object({
+  type: z.literal("new_strategy"),
+  description: z.string(),
+  strategy_definition: StrategyDefinitionSchema,
+})
 
 export const ProposalOutputSchema = z.object({
   strategy_id: z.string(),
   hypothesis: z.string().min(50),
-  proposed_change: z.object({
-    type: z.enum(["add_filter", "modify_parameter", "remove_rule", "add_rule"]),
-    description: z.string(),
-    parameter: z.string().optional(),
-    old_value: z.unknown().optional(),
-    new_value: z.unknown().optional(),
-    filter_expression: z.string().optional(),
-  }),
+  // Plain union, not discriminatedUnion: TweakChangeSchema's discriminant is
+  // itself a 4-value enum (one "branch" covering 4 literals), which
+  // discriminatedUnion doesn't support directly. The two schemas' `type`
+  // value sets are disjoint, so zod's ordinary matching disambiguates fine.
+  proposed_change: z.union([TweakChangeSchema, NewStrategyChangeSchema]),
+  // Optional (was required): a brand-new strategy has no Observer-derived
+  // statistical evidence to report yet — it's validated by backtesting
+  // (see orchestrator.ts's new_strategy branch), not by a feature/threshold
+  // pattern that presupposes trade history that can't exist yet.
   evidence: z.object({
     feature_name: z.string(),
     threshold: z.number(),
@@ -20,7 +45,7 @@ export const ProposalOutputSchema = z.object({
     filtered_win_rate: z.number(),
     sample_size: z.number().int().positive(),
     p_value: z.number(),
-  }),
+  }).optional(),
   expected_improvement: z.object({
     win_rate_delta: z.number(),
     r_delta: z.number(),

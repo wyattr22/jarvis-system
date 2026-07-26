@@ -15,7 +15,7 @@ expected; each phase's own PR has its exact status.
 | 17 | Wire rule engine into backtest + signal engine | 🔍 [PR #90](https://github.com/wyattr22/jarvis-system/pull/90) (stacked on #89) |
 | 18 | Capital-tier enforcement — real safety gap, proved with an in-memory-DB integration test | 🔍 [PR #91](https://github.com/wyattr22/jarvis-system/pull/91) (stacked on #90, merges #88) |
 | 19 | Multi-provider LLM router — Google Gemini Flash + local Ollama added, cost tiers; **Kimi K2/Qwen NOT added** (see DECISIONS.md — no free tier currently exists on OpenRouter, verified live 2026-07-25) | 🔍 [PR #92](https://github.com/wyattr22/jarvis-system/pull/92) |
-| 20 | Strategy-Author agent + council `new_strategy` proposal type | queued (this branch) |
+| 20 | Strategy-Author agent + council `new_strategy` proposal type — `ProposalOutputSchema.proposed_change` now a union incl. `new_strategy` (evidence optional for it), `researcher.ts`'s brainstorm mode gains `runStrategyAuthor()` behind `STRATEGY_AUTHOR_ENABLED` (default off) using `preferredCostTier:"premium"`, orchestrator backtests a fresh candidate via `backtestWalkForward` instead of trade-history `runWalkForward` (which can never pass for a strategy with zero history), approving via `/proposals` enables the draft strategy row (still tier 0). Proved end-to-end with a real approval-flow integration test: approve → `enabled=1` but `capital_tier` stays `0` → auto-cycle still can't execute it | ✅ this PR |
 | 21 | Knowledge-graph brain: in-app force-directed graph + Obsidian markdown export | queued |
 
 **Merge order that matters:** #88 and #89 can merge to `main` in either

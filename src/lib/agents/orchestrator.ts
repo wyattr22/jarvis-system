@@ -5,9 +5,13 @@ import { getOpportunitiesForCouncil } from "./opportunities-context"
 import { runCriticEnsemble } from "./critic"
 import { runRiskManager } from "./risk-manager"
 import { runMetaAgent } from "./meta-agent"
-import { runWalkForward } from "@/lib/validation/walk-forward"
+import { runWalkForward, backtestWalkForward, type InMemoryWalkForwardResult } from "@/lib/validation/walk-forward"
+import { backtestUniverse } from "@/lib/strategy-engine/backtest-runner"
+import { getActiveUniverse } from "@/lib/universe/store"
 import { auditLog } from "@/lib/guardrails/audit"
 import { recordAgentOutput } from "./transcript"
+
+const NEW_STRATEGY_BACKTEST_SYMBOL_COUNT = 30
 
 export interface OrchestrationResult {
   proposalId: string
@@ -68,7 +72,56 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
   }, proposalId)
 
   // Step 3: Walk-forward validation
-  const wfResult = await runWalkForward(strategyId)
+  //
+  // A "new_strategy" proposal (Phase 20) is a brand-new candidate with zero
+  // live trade history by definition -- runWalkForward's trade-history query
+  // requires 50+ historical trades to even attempt validation, which isn't
+  // "hard but fair" for something that's never traded, it's a wall. Instead:
+  // insert a draft strategies row (capital_tier 0 -- shadow, enabled 0) and
+  // validate via a fresh historical backtest through the exact same
+  // interpreter path a human clicking "WALK-FORWARD" would use.
+  const isNewStrategy = proposal.proposed_change.type === "new_strategy"
+  let wfResult: InMemoryWalkForwardResult | Awaited<ReturnType<typeof runWalkForward>>
+  let draftStrategyId: string | null = null
+
+  if (isNewStrategy && proposal.proposed_change.type === "new_strategy") {
+    const definition = proposal.proposed_change.strategy_definition
+    draftStrategyId = definition.id
+    await db.execute({
+      sql: `INSERT OR REPLACE INTO strategies
+              (id, name, description, rules_json, enabled, weight, config_json, capital_tier, created_at)
+            VALUES (?, ?, ?, NULL, 0, 1.0, NULL, 0, ?)`,
+      args: [
+        definition.id,
+        definition.id,
+        proposal.proposed_change.description,
+        Date.now(),
+      ],
+    })
+    // definition_json isn't in the base INSERT column list above (it's a
+    // lazily-migrated column, per Phase 17's dispatch.ts convention) --
+    // set it via UPDATE so this insert works whether or not the column
+    // exists yet on a fresh DB.
+    try {
+      await db.execute(`ALTER TABLE strategies ADD COLUMN definition_json TEXT`)
+    } catch { /* already exists */ }
+    await db.execute({
+      sql: `UPDATE strategies SET definition_json = ? WHERE id = ?`,
+      args: [JSON.stringify(definition), definition.id],
+    })
+    await auditLog("orchestrator", "new_strategy_draft_created", {
+      strategyId: definition.id, capital_tier: 0, enabled: 0,
+    })
+
+    const symbols = definition.universe === "active_scan_universe"
+      ? await getActiveUniverse(NEW_STRATEGY_BACKTEST_SYMBOL_COUNT)
+      : definition.universe
+    const trades = await backtestUniverse(definition.id, symbols).catch(() => [])
+    wfResult = backtestWalkForward(trades)
+  } else {
+    wfResult = await runWalkForward(strategyId)
+  }
+
   const walkForwardPass = wfResult.passedMinWindows && wfResult.consistent && wfResult.avgR > 0
 
   await db.execute({
@@ -81,6 +134,7 @@ export async function runFullCouncilCycle(strategyId: string): Promise<Orchestra
     avgR: wfResult.avgR,
     avgWinRate: wfResult.avgWinRate,
     consistent: wfResult.consistent,
+    source: isNewStrategy ? "fresh_backtest (new_strategy candidate, no live history exists yet)" : "live_trade_history",
   }, proposalId)
 
   // Step 4: Critics in parallel

@@ -17,6 +17,15 @@ type Proposal = {
   created_at: number
   walk_forward_result_json: string | null
   stability_score: number | null
+  proposed_change_json: string | null
+}
+
+/** Phase 20: "new_strategy" proposals carry a full StrategyDefinition
+ *  instead of a parameter/filter tweak — surfaced distinctly since it's a
+ *  materially different (and higher-stakes) kind of proposal to review. */
+function parseProposedChange(json: string | null): { type: string; description?: string; strategy_definition?: unknown } | null {
+  if (!json) return null
+  try { return JSON.parse(json) } catch { return null }
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -95,6 +104,11 @@ export default function ProposalsPage() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground tracking-widest">{p.strategy_id}</span>
                 <div className="flex items-center gap-2">
+                  {parseProposedChange(p.proposed_change_json)?.type === "new_strategy" && (
+                    <Badge variant="outline" className="text-[9px] text-blue-400 border-blue-400/30">
+                      NEW STRATEGY
+                    </Badge>
+                  )}
                   {p.ensemble_confidence !== null && (
                     <span className="text-[10px] text-primary">{(p.ensemble_confidence * 100).toFixed(0)}%</span>
                   )}
@@ -119,6 +133,29 @@ export default function ProposalsPage() {
               <p className="text-[10px] text-muted-foreground tracking-widest mb-1">HYPOTHESIS</p>
               <p className="text-xs leading-relaxed">{selected.hypothesis}</p>
             </div>
+
+            {(() => {
+              const change = parseProposedChange(selected.proposed_change_json)
+              if (change?.type !== "new_strategy") return null
+              return (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] text-muted-foreground tracking-widest">STRATEGY DEFINITION</p>
+                    <Badge variant="outline" className="text-[9px] text-blue-400 border-blue-400/30">NEW STRATEGY CANDIDATE</Badge>
+                  </div>
+                  {change.description && <p className="text-xs text-muted-foreground mb-2">{change.description}</p>}
+                  <pre className="text-[10px] text-muted-foreground font-mono bg-secondary rounded p-2 overflow-x-auto max-h-64">
+                    {JSON.stringify(change.strategy_definition, null, 2)}
+                  </pre>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Approving inserts this as a strategy at capital_tier 0 (shadow) — it generates signals for
+                    observation only. The shadow-tier gate in auto-cycle.ts blocks it from ever reaching a
+                    broker regardless of what the allocator/risk-manager approve. Promotion to a trading tier
+                    is a separate, later decision.
+                  </p>
+                </div>
+              )
+            })()}
 
             {selected.walk_forward_result_json && (() => {
               try {

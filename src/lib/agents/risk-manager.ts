@@ -13,9 +13,11 @@ export async function runRiskManager(
   // Hard rule checks first
   const hardRuleViolations: string[] = []
 
-  // Check proposed position size if applicable
+  // Check proposed position size if applicable -- only meaningful for the
+  // tweak-change shape; a new_strategy proposal has no parameter/new_value
+  // fields at all (Phase 20), so narrow the type first.
   const change = proposal.proposed_change
-  if (change.parameter === "position_size_pct" && typeof change.new_value === "number") {
+  if (change.type !== "new_strategy" && change.parameter === "position_size_pct" && typeof change.new_value === "number") {
     if (change.new_value > LIMITS.MAX_POSITION_SIZE_PCT) {
       hardRuleViolations.push(
         `Position size ${(change.new_value * 100).toFixed(1)}% exceeds hard cap ${(LIMITS.MAX_POSITION_SIZE_PCT * 100).toFixed(0)}%`

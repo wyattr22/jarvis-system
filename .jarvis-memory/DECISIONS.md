@@ -13,6 +13,72 @@ Append-only. New decisions go at the top. Format:
 
 ---
 
+## 2026-07-25 — Phase 20: Strategy-Author agent goes through the same gauntlet, no shortcuts
+
+**Context:** The Researcher agent's "brainstorm mode" (when the Observer has
+no statistical patterns yet) could only ever propose parameter/filter/rule
+tweaks to the one existing strategy — `ProposalOutputSchema.proposed_change.
+type` was `add_filter|modify_parameter|remove_rule|add_rule` only, and
+`runWalkForward` (trade-history based, requires 50+ historical trades)
+can never validate a strategy with zero history by definition — not "hard
+but fair," a wall. Needed a path for the Researcher to author genuinely new
+strategy logic that still clears Observer → walk-forward → Critic ensemble →
+Risk Manager before ever reaching live paper capital, with Phase 18's
+shadow-tier gate as the structural backstop, not just a review-process
+formality.
+
+**Decision:** `proposed_change` becomes a plain `z.union` (not
+`discriminatedUnion` — the tweak schema's discriminant is itself a 4-value
+enum, which zod's discriminatedUnion doesn't support as one branch) of the
+existing tweak shape plus a new `new_strategy` variant carrying a full
+`StrategyDefinition`. `evidence` becomes optional — a brand-new candidate
+has no Observer-derived feature/threshold pattern to report, it's validated
+by backtest instead. `researcher.ts` gains `runStrategyAuthor()`, reached
+only when brainstorming AND `STRATEGY_AUTHOR_ENABLED=true` (default off,
+same reasoning as `auto_execute` defaulting off — unattended weekly cycles
+would otherwise mean ~52 untriaged candidates/year before a human's
+reviewed the first few), using `preferredCostTier: "premium"` (Phase 19)
+instead of the tweak path's `preferredModel: "groq-llama-70b"` — this is the
+first real call site to use the cost-tier mechanism Phase 19 built.
+
+`orchestrator.ts`: when `proposed_change.type === "new_strategy"`, inserts a
+**draft** `strategies` row (`capital_tier: 0`, `enabled: 0`,
+`definition_json` set immediately, not deferred) and validates via a fresh
+historical backtest (`backtestUniverse()`, extracted from the backtest
+route's `simulateSymbol` into `strategy-engine/backtest-runner.ts` so the
+orchestrator reuses the exact same code path a human clicking "WALK-FORWARD"
+would use) + `backtestWalkForward` — everything downstream (critic ensemble,
+risk-manager veto, transcript recording) runs completely unchanged.
+Approving via `PATCH /api/proposals/[id]` now additionally flips the draft
+row's `enabled` to `1` for `new_strategy` proposals — `capital_tier` stays
+`0`, untouched by approval.
+
+**Why:** "Same gauntlet, no shortcuts" only means something if it's provable
+in code, not asserted in a comment. `auto-cycle.new-strategy-shadow.test.ts`
+does exactly that: seeds a draft tier-0 strategy + its `new_strategy`
+proposal, calls the **real** `PATCH` route handler to approve it (not a
+hand-set DB row), confirms `enabled` flips to `1` while `capital_tier` stays
+`0`, then runs a full `runAutoCycle()` and confirms its signal still can't
+reach `place()` while a tier-1 control strategy's does in the same cycle —
+the concrete proof that approving a proposal can never itself grant trading
+capital, only observation.
+
+**Consequences:** `experiments.is_new_strategy` (tracking a new strategy's
+ongoing shadow-vs-live performance once enabled, for eventual tier 0→1
+promotion) was scoped out of this phase — the shadow-experiment tracking
+system (12.7) needs its own look at how promotion criteria would apply to a
+strategy with no pre-existing baseline to compare against, which is more
+than a column addition. Until that exists, a `new_strategy` candidate can be
+approved/enabled (generating real signals for observation) but has no
+automated path to ever reach `capital_tier` 1 — promoting one out of shadow
+is a manual DB/admin action for now, same as it already effectively was for
+capital tier changes in general. `/council`'s deliberation transcript view
+wasn't updated to badge `new_strategy` proposals distinctly (only
+`/proposals`, where the actual approve/reject decision happens, was) — a
+smaller follow-up, not a safety gap.
+
+---
+
 ## 2026-07-25 — Phase 16: rule engine as the one execution path, not a second system
 
 **Context:** `checkBotSignal`/`StrategyParams` (`src/lib/backtest/bot-strategy.ts`)

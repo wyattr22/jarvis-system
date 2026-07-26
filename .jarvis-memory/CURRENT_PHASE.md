@@ -1,5 +1,23 @@
 # Current Phase
 
+**Phase 15 — Self-authoring strategies, multi-provider LLM, OANDA, brain (started 2026-07-25).**
+Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Seven
+phases, numbered continuing from 14.2. **Note on branch topology:** 15 and 16
+were both branched from `main` independently (no shared files) so they can
+merge in either order — expect a trivial conflict in this file's top section
+if both land before either is rebased; keep whichever phase's table entries
+are missing.
+
+| Step | What | Status |
+|---|---|---|
+| 15.1 | OANDA forex adapter + `signalToOpportunity` asset-class fix + per-asset-class market-hours gate | 🔍 in review, [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) — needs real `OANDA_API_KEY`/`OANDA_ACCOUNT_ID` to verify (401 on the practice API with the key provided so far; likely a truncated copy-paste, unresolved) |
+| 16 | StrategyDefinition schema (`src/lib/strategy-engine/schema.ts`) + rule-engine interpreter (`interpreter.ts`) + indicator extraction (`indicators.ts`, re-imported by `bot-strategy.ts` unchanged) + `legacy-definition.ts` (smc-ict-v4 as data) — parity-tested bar-for-bar against `checkBotSignal` across 5 random synthetic price paths | ✅ this PR |
+| 17 | Wire rule engine into backtest + signal engine | queued |
+| 18 | Capital-tier enforcement — closes a real gap: `capital_tier` is currently decorative | queued |
+| 19 | Multi-provider LLM router: Google Gemini Flash, local Ollama, OpenRouter Kimi K2/Qwen, cost tiers | queued |
+| 20 | Strategy-Author agent + council `new_strategy` proposal type | queued |
+| 21 | Knowledge-graph brain: in-app force-directed graph + Obsidian markdown export | queued |
+
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
 ## Phase 14 — Optimization (started 2026-07-10)

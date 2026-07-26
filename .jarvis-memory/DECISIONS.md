@@ -13,6 +13,62 @@ Append-only. New decisions go at the top. Format:
 
 ---
 
+## 2026-07-25 — Phase 21: knowledge-graph brain, structural extraction only (LLM layer deferred)
+
+**Context:** No relationship view existed over anything Jarvis has done —
+`/memories` is a flat list, research notes are just table rows, nothing is
+connected. Wanted an Obsidian-like "second brain": an in-app graph plus a
+real exportable vault.
+
+**Decision:** `kg_nodes`/`kg_edges` (lazy-created, `src/lib/knowledge-graph/
+store.ts`), populated by `runStructuralSync()` — every FK relationship
+already in the schema (`signals.strategy_id`, `trades.signal_id`,
+`proposals.strategy_id`, `experiments.proposal_id`) becomes an edge via
+plain SQL, symbols become nodes automatically. **Zero LLM calls, zero
+hallucination risk.** `/api/brain/sync` (daily cron, same `CRON_SECRET`
+pattern as every other job) triggers it incrementally via
+`kg_sync_state.last_synced_at`. `/brain` page: `react-force-graph-2d` (new
+dependency — canvas-based, no hand-rolled d3-force needed) in a
+`next/dynamic({ssr:false})` wrapper since it touches canvas, colored by
+`node_type` against the app's existing semantic palette, click-through to
+each entity's real page rather than duplicating detail views.
+`/api/brain/export` builds an Obsidian-compatible vault (`jszip`, new
+dependency) entirely in memory — one `.md` file per node with frontmatter +
+a `[[Wikilink]]` `## Links` section from edges — and streams it as a
+download. Explicitly a one-shot snapshot, not a live-synced vault: Vercel
+has no persistent filesystem to keep one on the server side.
+
+**LLM-based extraction over free text (research_notes/daily_digests/
+jarvis_memory) was deliberately deferred, not silently dropped.** The
+structural layer alone is already a genuinely useful "what has Jarvis done
+and why" graph with no cost or accuracy risk; adding an LLM extraction pass
+means real prompt/quota tuning (which cheap-tier model, what few-shot
+examples keep entity extraction from hallucinating relationships) that's
+better done as its own follow-up once the structural layer has been lived
+with for a bit, not bundled into the same PR as the schema/UI/export
+groundwork.
+
+**Verification (live, not just unit-tested):** ran the real sync against
+the actual dev Turso database during this PR (not a mock) — found 12 nodes
+/ 10 edges from genuine prior council proposals and the `smc-ict-v4`
+strategy row. Downloaded the resulting export, confirmed real,
+correctly-deduplicated markdown files with working frontmatter. This is
+purely additive (3 new tables, read-only SELECTs against existing ones) —
+nothing pre-existing was modified — but it does mean **real derived data
+now exists in `kg_nodes`/`kg_edges` in the live dev database** from this
+verification run, flagged here rather than left as a surprise.
+
+**Consequences:** pnpm's local store needed relinking before `pnpm add`
+would work in this environment (`ERR_PNPM_UNEXPECTED_STORE` — a pre-existing
+node_modules/store version mismatch, unrelated to this phase) — resolved
+with a plain `pnpm install` before adding the two new dependencies; no
+version drift resulted (`pnpm-lock.yaml` diff was purely additive). Also hit
+a stale-`.next`-directory issue where `next dev` 404'd on *every* route
+(not just the new ones) after a preceding `next build` — clearing `.next`
+fixed it; worth remembering if a future session sees the same symptom.
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

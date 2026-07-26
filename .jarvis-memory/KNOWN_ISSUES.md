@@ -32,3 +32,20 @@ Append open items here. Close them out with a strike-through + date when fixed.
   intraday cadence for free: point cron-job.org (or similar) at the endpoints
   with `Authorization: Bearer $CRON_SECRET` — they're plain GET routes.
   Or upgrade to Vercel Pro.
+
+- **Knowledge-graph brain (Phase 21) has no LLM-based extraction yet** —
+  `runStructuralSync()` only covers FK-derived relationships (strategy →
+  signal → trade, proposal → strategy, experiment → proposal). Free-text
+  sources (`research_notes`, `daily_digests`, `jarvis_memory`) aren't parsed
+  into graph nodes/edges at all yet. Deliberately deferred rather than rushed
+  — needs real prompt/quota tuning on the cheap LLM tier (Phase 19) to avoid
+  hallucinated relationships, better done as its own follow-up PR. See
+  DECISIONS.md's Phase 21 entry.
+
+- **`next lint` is fully broken, not just untuned** (2026-07-25, Phase 15):
+  Next.js 16 removed the `next lint` command entirely; running it now fails
+  immediately with "Invalid project directory provided" instead of linting
+  anything, and there's no `eslint.config.*` in the repo either. CI already
+  runs it as `|| true` so this doesn't block merges. Real fix: run the
+  `next-lint-to-eslint-cli` codemod, add a flat ESLint config, repoint the
+  `lint` script + CI at `eslint .`.

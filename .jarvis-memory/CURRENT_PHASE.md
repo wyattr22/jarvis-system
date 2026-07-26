@@ -1,5 +1,22 @@
 # Current Phase
 
+**Phase 15 — Self-authoring strategies, multi-provider LLM, OANDA, brain (started 2026-07-25).**
+Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Branch
+topology: 15, 16, 19, 21 branch independently from `main`; 17 stacks on 16;
+18 stacks on 17 + merges 15; 20 stacks on 18 + merges 19. See each PR for
+exact status; expect trivial CURRENT_PHASE.md/DECISIONS.md merge conflicts
+as these land on `main` in sequence.
+
+| Step | What | Status |
+|---|---|---|
+| 15.1 | OANDA forex adapter + asset-class fix + market-hours gate | 🔍 [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) — needs real OANDA creds to verify |
+| 16 | StrategyDefinition schema + rule-engine interpreter, parity-tested | 🔍 [PR #89](https://github.com/wyattr22/jarvis-system/pull/89) |
+| 17 | Wire rule engine into backtest + signal engine | 🔍 [PR #90](https://github.com/wyattr22/jarvis-system/pull/90) |
+| 18 | Capital-tier enforcement — real safety gap closed, integration-tested | 🔍 [PR #91](https://github.com/wyattr22/jarvis-system/pull/91) |
+| 19 | Multi-provider LLM router — Google/Ollama added, cost tiers; Kimi K2/Qwen deliberately NOT added (no free tier exists, verified live) | 🔍 [PR #92](https://github.com/wyattr22/jarvis-system/pull/92) |
+| 20 | Strategy-Author agent + council `new_strategy` type — proved end-to-end that approval can't grant execution rights | 🔍 [PR #93](https://github.com/wyattr22/jarvis-system/pull/93) |
+| 21 | Knowledge-graph brain — `kg_nodes`/`kg_edges` structural sync (no LLM), `/brain` force-directed graph, Obsidian export. **Live-verified against the real dev Turso DB during this PR**: sync found 12 nodes/10 edges of real proposal/strategy history, export produced real, correctly-deduped markdown files with working frontmatter — additive only (new tables, read-only queries against existing ones), nothing existing was modified | ✅ this PR |
+
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
 ## Phase 14 — Optimization (started 2026-07-10)

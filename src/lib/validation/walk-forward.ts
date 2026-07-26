@@ -1,6 +1,84 @@
 import { db } from "@/lib/db/client"
 import { getHoldoutBoundary } from "./holdout"
 
+export interface SimTrade {
+  instrument: string
+  direction: string
+  r_multiple: number
+  pnl: number | null
+  opened_at: number
+  closed_at: number | null
+  regime_tag: string | null
+}
+
+export interface InMemoryWalkForwardResult {
+  windows: Array<{
+    trainStart: number; trainEnd: number
+    testStart: number; testEnd: number
+    testR: number; testWinRate: number; testSharpe: number; passed: boolean
+  }>
+  avgR: number
+  avgWinRate: number
+  avgSharpe: number
+  consistent: boolean
+  passedMinWindows: boolean
+}
+
+/**
+ * Walk-forward validation over freshly-simulated (not yet-live) trades —
+ * extracted from the backtest route (Phase 17) so a strategy with zero live
+ * trade history (any brand-new candidate, human- or LLM-authored) can still
+ * be validated against its own backtest, rather than failing runWalkForward
+ * below purely for lack of history it can't possibly have yet.
+ */
+export function backtestWalkForward(
+  trades: SimTrade[],
+  trainMonths = 2,
+  testMonths = 1,
+): InMemoryWalkForwardResult {
+  if (trades.length < 20) {
+    return { windows: [], avgR: 0, avgWinRate: 0, avgSharpe: 0, consistent: false, passedMinWindows: false }
+  }
+
+  const MS_MONTH = 30 * 86_400_000
+  const first = Math.min(...trades.map(t => t.opened_at))
+  const last = Math.max(...trades.map(t => t.opened_at))
+
+  const windows: InMemoryWalkForwardResult["windows"] = []
+
+  let cursor = first
+  while (cursor + (trainMonths + testMonths) * MS_MONTH <= last) {
+    const testStart = cursor + trainMonths * MS_MONTH
+    const testEnd = testStart + testMonths * MS_MONTH
+    const batch = trades.filter(t => t.opened_at >= testStart && t.opened_at < testEnd)
+
+    if (batch.length >= 3) {
+      const rs = batch.map(t => t.r_multiple)
+      const avgR = rs.reduce((s, r) => s + r, 0) / rs.length
+      const winRate = rs.filter(r => r > 0).length / rs.length
+      const std = Math.sqrt(rs.reduce((s, r) => s + (r - avgR) ** 2, 0) / rs.length)
+      windows.push({
+        trainStart: cursor, trainEnd: testStart, testStart, testEnd,
+        testR: avgR, testWinRate: winRate,
+        testSharpe: std > 0 ? avgR / std : 0,
+        passed: avgR > 0 && winRate > 0.40,
+      })
+    }
+    cursor += testMonths * MS_MONTH
+  }
+
+  if (!windows.length) {
+    return { windows: [], avgR: 0, avgWinRate: 0, avgSharpe: 0, consistent: false, passedMinWindows: false }
+  }
+
+  const avgR = windows.reduce((s, w) => s + w.testR, 0) / windows.length
+  const avgWinRate = windows.reduce((s, w) => s + w.testWinRate, 0) / windows.length
+  const avgSharpe = windows.reduce((s, w) => s + w.testSharpe, 0) / windows.length
+  const rs = windows.map(w => w.testR)
+  const consistent = Math.max(...rs) <= Math.abs(Math.min(...rs)) * 1.5 + 0.1 || windows.every(w => w.passed)
+  return { windows, avgR, avgWinRate, avgSharpe, consistent, passedMinWindows: windows.length >= 4 }
+}
+
 export interface WalkForwardWindow {
   trainStart: number
   trainEnd: number

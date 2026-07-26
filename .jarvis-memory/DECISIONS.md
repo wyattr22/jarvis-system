@@ -65,6 +65,58 @@ non-SMC, non-daily-bias strategy family is more of a v2 concern.
 
 ---
 
+## 2026-07-25 — Phase 17: interpreter dispatch avoids a manual production migration
+
+**Context:** Phase 16 built the rule-engine interpreter and schema, unwired.
+Phase 17 needed to make `strategyId` actually select behavior in the
+backtest route and signal engine (both previously called `checkBotSignal`
+directly, ignoring which strategy was asked for) without requiring anyone to
+run a write against the live Turso production database by hand.
+
+**Decision:** `strategy-engine/dispatch.ts`'s `getSignalForStrategy()`
+resolves a strategy's `StrategyDefinition` from the `strategies.definition_json`
+column (added via the same lazy `ALTER TABLE ... ADD COLUMN` + catch pattern
+`ensureSemanticSchema()` already uses elsewhere in this repo — happens
+automatically on first read in production, not a manual script). Critically,
+when that column is null/missing specifically for `strategyId === "smc-ict-v4"`
+(the one strategy that predates this whole system), dispatch resolves to
+`SMC_ICT_V4_DEFINITION` **in memory** rather than requiring a backfill write
+against the live row. Any strategy created from here on (Phase 20's
+LLM-authored candidates included) writes real `definition_json` at insert
+time, so this fallback only ever covers that one legacy row. Unknown/invalid
+definitions fall back further to the raw `checkBotSignal(DEFAULT_PARAMS)`
+call, never to "no signal at all."
+
+The backtest route's existing ad-hoc `StrategyParams` override path (the
+Strategy Builder UI, 12.6) is preserved exactly as-is — it only ever made
+sense as "tune smc-ict-v4's own knobs," so `paramOverrides` still calls
+`checkBotSignal` directly when present; `strategyId` dispatch only kicks in
+when no override is given, which is also what Phase 20's candidate-testing
+loop will use.
+
+The signal engine now loops over every `strategies WHERE enabled = 1` row
+(previously hardcoded to one `STRATEGY_ID` constant), each scanning its own
+`definition_json.universe` — batch bar-fetches are cached per unique
+universe within a sweep so strategies sharing `"active_scan_universe"` (the
+common case) only fetch once.
+
+**Why:** No code I wrote should need me (or anyone) to run a write against
+the live production database as a manual step — the existing lazy-migration
+convention already solves the schema half of that; the in-memory legacy
+fallback solves the data half for the one row this system inherited rather
+than created.
+
+**Consequences:** A strategy whose `universe` is an explicit non-equity list
+(e.g. future forex pairs) isn't wired to real bar-fetching yet —
+`fetchBatchBars` in `signals/engine.ts` is Alpaca-equity-only, so those
+symbols simply come back with zero bars and get skipped via the existing
+insufficient-data check, same as any other data gap. Not a crash, just a
+no-op until a broker-aware bar-fetch path exists for that asset class — a
+real gap to close before a forex-targeting `StrategyDefinition` could ever
+actually fire, flagged here rather than silently assumed to work.
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

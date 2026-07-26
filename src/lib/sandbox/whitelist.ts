@@ -65,9 +65,18 @@ const ALLOWED_HOSTS = new Set<string>([
   "www.omnycontent.com",
   "anchor.fm",
   "markethuddle.com",
+  "generativelanguage.googleapis.com",
   // Internal infra
   dbHost(process.env.TURSO_DATABASE_URL) ?? "",
   dbHost(process.env.UPSTASH_REDIS_REST_URL) ?? "",
+  // Local Ollama (Phase 19) — deliberately NOT a generalized "allow private
+  // IPs" rule (that would be an SSRF door: any code path constructing a URL
+  // could reach 10.x/192.168.x/169.254.169.254/etc). This is one exact
+  // host:port string, read from one env var the DEPLOYING USER explicitly
+  // set — same pattern as the two DB-host exceptions above. It's a no-op in
+  // production, where OLLAMA_HOST is never set (Vercel serverless has no
+  // route to a home LAN regardless).
+  dbHost(process.env.OLLAMA_HOST) ?? "",
 ].filter(Boolean))
 
 async function logBlocked(host: string, url: string): Promise<void> {

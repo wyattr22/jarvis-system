@@ -1,5 +1,23 @@
 # Current Phase
 
+**Phase 15 — Self-authoring strategies, multi-provider LLM, OANDA, brain (started 2026-07-25).**
+Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Branch
+topology note: 15, 16, 19, 21 branch independently from `main`; 17 stacks on
+16; 18 stacks on 17 and also merges 15 (shared file: auto-cycle.ts); 20 will
+need to merge both the 18-chain and 19. Expect this file and DECISIONS.md to
+need trivial merge-conflict resolution as these land — that's expected, see
+each phase's own PR for exact status.
+
+| Step | What | Status |
+|---|---|---|
+| 15.1 | OANDA forex adapter + `signalToOpportunity` asset-class fix + per-asset-class market-hours gate | 🔍 [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) |
+| 16 | StrategyDefinition schema + rule-engine interpreter, parity-tested against `checkBotSignal` | 🔍 [PR #89](https://github.com/wyattr22/jarvis-system/pull/89) |
+| 17 | Wire rule engine into backtest + signal engine | 🔍 [PR #90](https://github.com/wyattr22/jarvis-system/pull/90) (stacked on #89) |
+| 18 | Capital-tier enforcement — real safety gap, proved with an in-memory-DB integration test | 🔍 [PR #91](https://github.com/wyattr22/jarvis-system/pull/91) (stacked on #90, merges #88) |
+| 19 | Multi-provider LLM router — Google Gemini Flash + local Ollama added, cost tiers (`costTier` on every `ModelSpec`); **Kimi K2/Qwen NOT added** (see DECISIONS.md — no free tier currently exists on OpenRouter, verified live 2026-07-25) | ✅ this PR |
+| 20 | Strategy-Author agent + council `new_strategy` proposal type | queued |
+| 21 | Knowledge-graph brain: in-app force-directed graph + Obsidian markdown export | queued |
+
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
 ## Phase 14 — Optimization (started 2026-07-10)

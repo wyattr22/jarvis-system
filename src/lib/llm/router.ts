@@ -1,5 +1,5 @@
 import { redis } from "@/lib/cache/redis"
-import { callProvider, MODELS, modelsByPriority, type ModelSpec, type ModelFamily } from "./providers"
+import { callProvider, MODELS, modelsByPriority, type ModelSpec, type ModelFamily, type CostTier } from "./providers"
 
 const QUOTA_PREFIX = "llm:quota:"
 const CACHE_PREFIX = "llm:cache:"
@@ -9,6 +9,11 @@ type RouterRequest = {
   messages: { role: "system" | "user" | "assistant"; content: string }[]
   preferredModel?: string
   requiredFamily?: ModelFamily
+  /** Phase 19: restrict candidates to a cost tier (e.g. "premium" for
+   *  strategy authorship / risk vetoes, "cheap" for high-frequency work
+   *  like critic votes or knowledge-graph extraction). Ignored when
+   *  preferredModel is set — an explicit model choice always wins. */
+  preferredCostTier?: CostTier
   temperature?: number
   maxTokens?: number
   cacheable?: boolean
@@ -40,7 +45,7 @@ export async function route(req: RouterRequest): Promise<string> {
   }
 
   // Build candidate list ordered by preference
-  const candidates = buildCandidates(req.preferredModel, req.requiredFamily)
+  const candidates = buildCandidates(req.preferredModel, req.requiredFamily, req.preferredCostTier)
 
   for (const [key, model] of candidates) {
     const used = await getQuotaUsed(key)
@@ -63,7 +68,11 @@ export async function route(req: RouterRequest): Promise<string> {
   throw new Error("All LLM providers exhausted or over quota")
 }
 
-function buildCandidates(preferredModel?: string, requiredFamily?: ModelFamily): [string, ModelSpec][] {
+function buildCandidates(
+  preferredModel?: string,
+  requiredFamily?: ModelFamily,
+  preferredCostTier?: CostTier,
+): [string, ModelSpec][] {
   const all = modelsByPriority()
 
   if (preferredModel && MODELS[preferredModel]) {
@@ -74,6 +83,10 @@ function buildCandidates(preferredModel?: string, requiredFamily?: ModelFamily):
 
   if (requiredFamily) {
     return all.filter(([, m]) => m.family === requiredFamily)
+  }
+
+  if (preferredCostTier) {
+    return all.filter(([, m]) => m.costTier === preferredCostTier)
   }
 
   return all

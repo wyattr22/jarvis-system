@@ -13,6 +13,72 @@ Append-only. New decisions go at the top. Format:
 
 ---
 
+## 2026-07-25 — Phase 20: Strategy-Author agent goes through the same gauntlet, no shortcuts
+
+**Context:** The Researcher agent's "brainstorm mode" (when the Observer has
+no statistical patterns yet) could only ever propose parameter/filter/rule
+tweaks to the one existing strategy — `ProposalOutputSchema.proposed_change.
+type` was `add_filter|modify_parameter|remove_rule|add_rule` only, and
+`runWalkForward` (trade-history based, requires 50+ historical trades)
+can never validate a strategy with zero history by definition — not "hard
+but fair," a wall. Needed a path for the Researcher to author genuinely new
+strategy logic that still clears Observer → walk-forward → Critic ensemble →
+Risk Manager before ever reaching live paper capital, with Phase 18's
+shadow-tier gate as the structural backstop, not just a review-process
+formality.
+
+**Decision:** `proposed_change` becomes a plain `z.union` (not
+`discriminatedUnion` — the tweak schema's discriminant is itself a 4-value
+enum, which zod's discriminatedUnion doesn't support as one branch) of the
+existing tweak shape plus a new `new_strategy` variant carrying a full
+`StrategyDefinition`. `evidence` becomes optional — a brand-new candidate
+has no Observer-derived feature/threshold pattern to report, it's validated
+by backtest instead. `researcher.ts` gains `runStrategyAuthor()`, reached
+only when brainstorming AND `STRATEGY_AUTHOR_ENABLED=true` (default off,
+same reasoning as `auto_execute` defaulting off — unattended weekly cycles
+would otherwise mean ~52 untriaged candidates/year before a human's
+reviewed the first few), using `preferredCostTier: "premium"` (Phase 19)
+instead of the tweak path's `preferredModel: "groq-llama-70b"` — this is the
+first real call site to use the cost-tier mechanism Phase 19 built.
+
+`orchestrator.ts`: when `proposed_change.type === "new_strategy"`, inserts a
+**draft** `strategies` row (`capital_tier: 0`, `enabled: 0`,
+`definition_json` set immediately, not deferred) and validates via a fresh
+historical backtest (`backtestUniverse()`, extracted from the backtest
+route's `simulateSymbol` into `strategy-engine/backtest-runner.ts` so the
+orchestrator reuses the exact same code path a human clicking "WALK-FORWARD"
+would use) + `backtestWalkForward` — everything downstream (critic ensemble,
+risk-manager veto, transcript recording) runs completely unchanged.
+Approving via `PATCH /api/proposals/[id]` now additionally flips the draft
+row's `enabled` to `1` for `new_strategy` proposals — `capital_tier` stays
+`0`, untouched by approval.
+
+**Why:** "Same gauntlet, no shortcuts" only means something if it's provable
+in code, not asserted in a comment. `auto-cycle.new-strategy-shadow.test.ts`
+does exactly that: seeds a draft tier-0 strategy + its `new_strategy`
+proposal, calls the **real** `PATCH` route handler to approve it (not a
+hand-set DB row), confirms `enabled` flips to `1` while `capital_tier` stays
+`0`, then runs a full `runAutoCycle()` and confirms its signal still can't
+reach `place()` while a tier-1 control strategy's does in the same cycle —
+the concrete proof that approving a proposal can never itself grant trading
+capital, only observation.
+
+**Consequences:** `experiments.is_new_strategy` (tracking a new strategy's
+ongoing shadow-vs-live performance once enabled, for eventual tier 0→1
+promotion) was scoped out of this phase — the shadow-experiment tracking
+system (12.7) needs its own look at how promotion criteria would apply to a
+strategy with no pre-existing baseline to compare against, which is more
+than a column addition. Until that exists, a `new_strategy` candidate can be
+approved/enabled (generating real signals for observation) but has no
+automated path to ever reach `capital_tier` 1 — promoting one out of shadow
+is a manual DB/admin action for now, same as it already effectively was for
+capital tier changes in general. `/council`'s deliberation transcript view
+wasn't updated to badge `new_strategy` proposals distinctly (only
+`/proposals`, where the actual approve/reject decision happens, was) — a
+smaller follow-up, not a safety gap.
+
+---
+
 ## 2026-07-25 — Phase 16: rule engine as the one execution path, not a second system
 
 **Context:** `checkBotSignal`/`StrategyParams` (`src/lib/backtest/bot-strategy.ts`)
@@ -210,6 +276,71 @@ Also, the equity-only PDT guard can still veto the *entire* cycle (including
 forex, which isn't subject to PDT rules) when day-trades are high — an
 over-conservative but fail-safe behavior, left as-is for this phase rather
 than expanding scope into a cross-broker allocator redesign.
+
+---
+
+## 2026-07-25 — Phase 19: added Google/Ollama providers + cost tiers; Kimi K2/Qwen deliberately NOT added
+
+**Context:** User asked to use local models, Gemini Flash, Qwen, and Kimi K2
+to make the LLM layer more efficient — route high-frequency/low-stakes calls
+(critic votes, future knowledge-graph extraction) to fast/free models,
+reserve expensive reasoning for strategy authorship and risk vetoes. The
+existing router only knew 3 cloud providers (Groq/Cerebras/OpenRouter), all
+competing on one priority list with no cost/latency tiering.
+
+**Decision:** Added `google` and `ollama` to `ProviderName`, each with a
+`callGoogle()`/`callOllama()` — both plain OpenAI-compatible REST calls
+(verified live 2026-07-25 against each project's own docs, not assumed from
+training data: Gemini's real OpenAI-compat endpoint is
+`generativelanguage.googleapis.com/v1beta/openai/chat/completions` with
+current model id `gemini-3.6-flash`; Ollama's is `{OLLAMA_HOST}/v1/chat/
+completions`, dummy API key). Added `ModelSpec.costTier: "free-local" |
+"cheap" | "premium"` and `RouterRequest.preferredCostTier` so a call site can
+ask for a tier instead of (or alongside) a specific model.
+`google-gemini-flash` → cheap, `ollama-local` → free-local, existing 4
+free-tier models stay cheap, `openrouter-deepseek-r1` stays the one premium
+entry. Also removed the dead `"cloudflare"` `ProviderName` (declared since
+before this repo's git history but never had a `callProvider` case, a
+`MODELS` entry, or an env var — same category of dead weight as SambaNova).
+
+**Local Ollama's host is whitelisted narrowly, not generally**: `whitelist.ts`
+reads `OLLAMA_HOST` once and allows that *exact* host:port string — same
+mechanism as the existing Turso/Upstash DB-host exceptions, deliberately not
+a general "allow private IPs" rule (that would be an SSRF door). No-op in
+production since `OLLAMA_HOST` is never set there; `route()`'s existing
+fall-through-on-error loop already handles an unreachable candidate
+correctly with zero special-casing (proved in `router.test.ts`).
+
+**Kimi K2 and Qwen were explicitly NOT added, on purpose.** Live-probed
+OpenRouter's model catalog (`api/v1/models`) on 2026-07-25: the closest
+current matches are `moonshotai/kimi-k3`, `moonshotai/kimi-k2.7-code`,
+`qwen/qwen3.7-plus`, `qwen/qwen3.7-max` — **none has a free-tier variant**
+(all have nonzero prompt pricing). The router's only cost-control mechanism
+today (`dailyQuota` + Redis quota tracking in `router.ts`) is a *request/
+token-count* budget, not a *dollar-spend* budget — it was built entirely
+around free-tier providers and has no concept of "stop before we've spent
+$X." Wiring in a paid-only model through that mechanism as-is would mean an
+autonomous agent (this router is called from cron-triggered code with no
+human in the loop per-call) could rack up real charges with nothing capping
+total spend.
+
+**Why:** Every other provider in this repo was chosen specifically for a
+free tier (see the `.env.example` "all free tiers" comment, and the original
+choice of Groq/Cerebras/OpenRouter over paid alternatives). Silently
+breaking that invariant by wiring in a paid model — even a cheap one — isn't
+a call to make without the user explicitly deciding on it and setting a
+spend cap; it's not something a live-probe result should quietly paper over
+by picking the closest-sounding paid model instead.
+
+**Consequences:** If/when a free tier appears for a Kimi- or Qwen-family
+model on OpenRouter (or elsewhere), adding it is now trivial — just a new
+`MODELS` entry, zero new provider code, exactly like `openrouter-deepseek-r1`
+already works. Until then, the *local Ollama* provider added in this same
+phase is the actual way to run open-weight Kimi/Qwen-family models for free
+today (pull one via `ollama pull`, point `OLLAMA_MODEL` at it) — with the
+caveat that it only works from a local dev server, never from the deployed
+production cron jobs. Flagged prominently for the user rather than silently
+delivered as "done."
 
 ---
 

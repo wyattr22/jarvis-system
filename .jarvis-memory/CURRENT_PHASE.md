@@ -1,30 +1,29 @@
 # Current Phase
 
 **Phase 15 — Self-authoring strategies, multi-provider LLM, OANDA, brain (started 2026-07-25).**
-Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Seven
-phases, numbered continuing from 14.2. **Branch topology:** 15 and 16 were
-branched independently from `main` (no shared files at the time); 17 stacked
-on 16; 18 stacked on 17 and additionally merged in 15's branch since both
-touch `src/lib/execution/auto-cycle.ts` (15's asset-class fix + market-hours
-gate, 18's `strategy_id`/shadow-tier gate) — that merge is already done as of
-this PR, no outstanding conflict.
+Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Branch
+topology: 15, 16, 19, 21 branch independently from `main`; 17 stacks on 16;
+18 stacks on 17 and also merges 15 (shared file: `auto-cycle.ts`); 20 (this
+branch) stacks on 18 and also merges 19. Expect this file and DECISIONS.md
+to need trivial merge-conflict resolution as these land on `main` — that's
+expected; each phase's own PR has its exact status.
 
 | Step | What | Status |
 |---|---|---|
-| 15.1 | OANDA forex adapter + `signalToOpportunity` asset-class fix + per-asset-class market-hours gate | 🔍 in review, [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) — needs real `OANDA_API_KEY`/`OANDA_ACCOUNT_ID` to verify (401 on the practice API with the key provided so far; likely a truncated copy-paste, unresolved) |
-| 16 | StrategyDefinition schema (`src/lib/strategy-engine/schema.ts`) + rule-engine interpreter (`interpreter.ts`) + indicator extraction (`indicators.ts`, re-imported by `bot-strategy.ts` unchanged) + `legacy-definition.ts` (smc-ict-v4 as data) — parity-tested bar-for-bar against `checkBotSignal` across 5 random synthetic price paths | 🔍 in review, [PR #89](https://github.com/wyattr22/jarvis-system/pull/89) |
-| 17 | Wire rule engine into backtest + signal engine — `strategy-engine/dispatch.ts` (`getSignalForStrategy`, lazy `definition_json` column, in-memory legacy fallback for smc-ict-v4 avoiding a manual prod migration), signal engine now iterates every `enabled` strategy over its own universe, backtest route dispatches by `strategyId` when no ad-hoc param override is given, `backtestWalkForward` extracted to `validation/walk-forward.ts` for Phase 20's zero-history-strategy case | 🔍 in review, [PR #90](https://github.com/wyattr22/jarvis-system/pull/90) (stacked on #89) |
-| 18 | Capital-tier enforcement — `opportunities.strategy_id` (lazy column), shadow-tier gate in `auto-cycle.ts` blocks `capital_tier === 0` (or unresolvable strategy_id) before `adapter.place()`, `/strategies` SHADOW badge. Proved with a real in-memory-DB integration test: two signals promoted, only the tier-1 one executes, `fakeEquityAdapter.place()` called exactly once and only for it, audit-log row confirms the block | ✅ this PR |
-| 19 | Multi-provider LLM router: Google Gemini Flash, local Ollama, OpenRouter Kimi K2/Qwen, cost tiers | queued |
-| 20 | Strategy-Author agent + council `new_strategy` proposal type | queued |
+| 15.1 | OANDA forex adapter + `signalToOpportunity` asset-class fix + per-asset-class market-hours gate | 🔍 [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) — needs real `OANDA_API_KEY`/`OANDA_ACCOUNT_ID` to verify (401 on the practice API with the key provided so far, likely a truncated copy-paste, unresolved) |
+| 16 | StrategyDefinition schema + rule-engine interpreter, parity-tested against `checkBotSignal` | 🔍 [PR #89](https://github.com/wyattr22/jarvis-system/pull/89) |
+| 17 | Wire rule engine into backtest + signal engine | 🔍 [PR #90](https://github.com/wyattr22/jarvis-system/pull/90) (stacked on #89) |
+| 18 | Capital-tier enforcement — real safety gap, proved with an in-memory-DB integration test | 🔍 [PR #91](https://github.com/wyattr22/jarvis-system/pull/91) (stacked on #90, merges #88) |
+| 19 | Multi-provider LLM router — Google Gemini Flash + local Ollama added, cost tiers; **Kimi K2/Qwen NOT added** (see DECISIONS.md — no free tier currently exists on OpenRouter, verified live 2026-07-25) | 🔍 [PR #92](https://github.com/wyattr22/jarvis-system/pull/92) |
+| 20 | Strategy-Author agent + council `new_strategy` proposal type — `ProposalOutputSchema.proposed_change` now a union incl. `new_strategy` (evidence optional for it), `researcher.ts`'s brainstorm mode gains `runStrategyAuthor()` behind `STRATEGY_AUTHOR_ENABLED` (default off) using `preferredCostTier:"premium"`, orchestrator backtests a fresh candidate via `backtestWalkForward` instead of trade-history `runWalkForward` (which can never pass for a strategy with zero history), approving via `/proposals` enables the draft strategy row (still tier 0). Proved end-to-end with a real approval-flow integration test: approve → `enabled=1` but `capital_tier` stays `0` → auto-cycle still can't execute it | ✅ this PR |
 | 21 | Knowledge-graph brain: in-app force-directed graph + Obsidian markdown export | queued |
 
-**Merge order that matters:** #88 (15) and #89 (16) can merge to `main` in
-either order (independent). #90 (17) must merge after #89 — its base branch
-already reflects that. Phase 18 (this branch) depends on both #90 and #88's
-content and has already merged both locally; once #88/#89/#90 land on
-`main`, Phase 18's PR should be rebased onto `main` before merging so its
-diff doesn't re-propose changes those PRs already shipped.
+**Merge order that matters:** #88 and #89 can merge to `main` in either
+order (independent). #90 must merge after #89. #91 depends on #90 and #88's
+content. #92 is independent, can merge anytime. Phase 20 (this branch)
+depends on #91's full chain plus #92 and has already merged both locally —
+rebase onto `main` once all of #88/#89/#90/#91/#92 land there before merging
+this one, so its diff doesn't re-propose already-shipped changes.
 
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 

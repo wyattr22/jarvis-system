@@ -10,7 +10,7 @@ vi.mock("@/lib/sandbox/whitelist", () => ({
   }),
 }))
 
-const KEY_VARS = ["GROQ_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY"]
+const KEY_VARS = ["GROQ_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY", "GOOGLE_API_KEY", "OLLAMA_HOST"]
 const saved: Record<string, string | undefined> = {}
 
 beforeEach(() => {
@@ -42,6 +42,16 @@ describe("modelsByPriority", () => {
   it("has no sambanova models left", () => {
     expect(Object.values(MODELS).some(m => (m.provider as string) === "sambanova")).toBe(false)
   })
+
+  it("has no cloudflare models left (dead placeholder, removed Phase 19)", () => {
+    expect(Object.values(MODELS).some(m => (m.provider as string) === "cloudflare")).toBe(false)
+  })
+
+  it("every model has a costTier (Phase 19)", () => {
+    for (const [key, m] of Object.entries(MODELS)) {
+      expect(["free-local", "cheap", "premium"], key).toContain(m.costTier)
+    }
+  })
 })
 
 describe("provider key guards", () => {
@@ -61,5 +71,17 @@ describe("provider key guards", () => {
     await expect(
       callProvider({ model: MODELS["openrouter-deepseek-r1"], messages: [] }),
     ).rejects.toThrow("OPENROUTER_API_KEY not configured")
+  })
+
+  it("google throws before fetching when GOOGLE_API_KEY is missing", async () => {
+    await expect(
+      callProvider({ model: MODELS["google-gemini-flash"], messages: [] }),
+    ).rejects.toThrow("GOOGLE_API_KEY not configured")
+  })
+
+  it("ollama throws before fetching when OLLAMA_HOST is missing — this is the exact behavior that lets it fail-and-fall-through cleanly in production, where OLLAMA_HOST is never set", async () => {
+    await expect(
+      callProvider({ model: MODELS["ollama-local"], messages: [] }),
+    ).rejects.toThrow("OLLAMA_HOST not configured")
   })
 })

@@ -8,6 +8,7 @@ const NAV = [
   { href: "/markets",       label: "MARKETS",       group: "market" },
   { href: "/digest",        label: "DEBRIEF",       group: "market" },
   { href: "/memories",      label: "MEMORY",        group: "market" },
+  { href: "/brain",         label: "BRAIN",         group: "market" },
   { href: "/charts",        label: "CHARTS",        group: "market" },
   { href: "/portfolio",     label: "PORTFOLIO",     group: "market" },
   { href: "/performance",   label: "PERFORMANCE",   group: "market" },

@@ -4,7 +4,8 @@
 // Currently:
 //   equity  → AlpacaAdapter (live)
 //   futures → FuturesAdapterStub (throws on use)
-//   forex   → ForexAdapterStub (throws on use)
+//   forex   → OandaAdapter when OANDA_API_KEY is configured (Phase 15),
+//             else ForexAdapterStub (throws on use)
 //   crypto  → AlpacaAdapter (same broker, same API)
 //
 // Add new adapters by registering them in the map below.
@@ -13,12 +14,16 @@ import type { AssetClass, BrokerAdapter } from "./adapter"
 import { AlpacaAdapter } from "./alpaca"
 import { FuturesAdapterStub } from "./futures"
 import { ForexAdapterStub } from "./forex"
+import { OandaAdapter } from "./oanda"
 
 const REGISTRY: Partial<Record<AssetClass, BrokerAdapter>> = {
   equity:  AlpacaAdapter,
   crypto:  AlpacaAdapter,   // Alpaca supports crypto via the same /v2/orders endpoint
   futures: FuturesAdapterStub,
-  forex:   ForexAdapterStub,
+  // Falls back to the stub when unconfigured rather than crashing the
+  // registry — a misconfigured/absent OANDA_API_KEY should degrade to the
+  // existing "not implemented" error, not break every other asset class.
+  forex:   process.env.OANDA_API_KEY ? OandaAdapter : ForexAdapterStub,
 }
 
 export function getAdapter(assetClass: AssetClass): BrokerAdapter {

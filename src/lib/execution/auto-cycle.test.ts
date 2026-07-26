@@ -10,6 +10,7 @@ const base = {
   target: 106,
   confidence: 0.7,
   reasoning_json: JSON.stringify({ text: "internal scan: FVG, OTE | RR 2.00 RSI 55" }),
+  strategy_id: "smc-ict-v4",
 }
 
 describe("signalToOpportunity", () => {
@@ -44,6 +45,13 @@ describe("signalToOpportunity", () => {
   it("survives malformed reasoning JSON", () => {
     const opp = signalToOpportunity({ ...base, reasoning_json: "{broken" })!
     expect(opp.thesis).toContain("sig-1")
+  })
+
+  it("derives asset_class from the instrument instead of hardcoding equity (Phase 15)", () => {
+    expect(signalToOpportunity({ ...base, instrument: "AMD" })!.asset_class).toBe("equity")
+    expect(signalToOpportunity({ ...base, instrument: "EUR_USD" })!.asset_class).toBe("forex")
+    expect(signalToOpportunity({ ...base, instrument: "EUR/USD" })!.asset_class).toBe("forex")
+    expect(signalToOpportunity({ ...base, instrument: "ESU26" })!.asset_class).toBe("futures")
   })
 })
 

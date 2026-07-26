@@ -13,6 +13,52 @@ Append-only. New decisions go at the top. Format:
 
 ---
 
+## 2026-07-25 — Phase 15: OANDA forex adapter + per-asset-class market-hours gate
+
+**Context:** Starting a multi-phase plan (Phases 15–21, full plan at
+`/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`) toward
+self-authoring strategies, a multi-provider LLM router, OANDA forex
+execution, and a knowledge-graph "brain." Phase 15 is the first, self-contained
+step: forex had price data but zero execution — `ForexAdapterStub` threw on
+every method, and `signalToOpportunity()` hardcoded `asset_class: "equity"`
+regardless of the signal's real instrument, so the live execution pipeline
+was 100% equity-only even though `getAdapter()` dispatch was already generic.
+
+**Decision:** Implemented `OandaAdapter` against OANDA's v20 REST practice
+API (per `forex.ts`'s own header comment naming it the recommended first
+forex provider — zero credit card, matches every other free-tier choice in
+this repo). Registry (`brokers/index.ts`) picks it when `OANDA_API_KEY` is
+set, else falls back to the existing stub rather than crashing. Fixed
+`signalToOpportunity()` to derive `asset_class` via the existing
+`parseInstrument()` util instead of hardcoding it.
+
+While fixing the hardcode, found and fixed a second problem in the same
+function's caller: `runAutoCycle()`'s market-hours gate checked only
+`equityAdapter.isOpen()` and aborted the **entire** cycle if equity was
+closed — harmless before this PR (forex never got real opportunities to
+abort), but would have silently starved forex trading outside the ~6.5h/day
+US equity window once forex signals became possible. Changed the gate to
+check `isOpen()` per asset class actually present in the day's opportunities
+and filter per-class instead of a single global abort.
+
+**Why:** OANDA over other forex candidates (FXCM deprecated, IBKR needs a
+funded account) — matches the free-practice-tier bar every other provider in
+this repo was picked against. Per-class market-hours gating over a shared
+gate — forex trades ~24/5 while equity trades ~6.5h/day; a shared gate makes
+the feature nominally exist but practically inert for forex.
+
+**Consequences:** Equity/positions/day-P&L used for allocator sizing
+(`buildPlan`) and the PDT guard still come from the equity adapter only —
+OANDA's own equity and open positions aren't yet part of the shared capital
+pool or cross-asset exposure tracking (pre-existing limitation, documented
+inline in `scorer.ts` since before this PR — not introduced or fixed here).
+Also, the equity-only PDT guard can still veto the *entire* cycle (including
+forex, which isn't subject to PDT rules) when day-trades are high — an
+over-conservative but fail-safe behavior, left as-is for this phase rather
+than expanding scope into a cross-broker allocator redesign.
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

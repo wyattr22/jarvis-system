@@ -213,6 +213,71 @@ than expanding scope into a cross-broker allocator redesign.
 
 ---
 
+## 2026-07-25 — Phase 19: added Google/Ollama providers + cost tiers; Kimi K2/Qwen deliberately NOT added
+
+**Context:** User asked to use local models, Gemini Flash, Qwen, and Kimi K2
+to make the LLM layer more efficient — route high-frequency/low-stakes calls
+(critic votes, future knowledge-graph extraction) to fast/free models,
+reserve expensive reasoning for strategy authorship and risk vetoes. The
+existing router only knew 3 cloud providers (Groq/Cerebras/OpenRouter), all
+competing on one priority list with no cost/latency tiering.
+
+**Decision:** Added `google` and `ollama` to `ProviderName`, each with a
+`callGoogle()`/`callOllama()` — both plain OpenAI-compatible REST calls
+(verified live 2026-07-25 against each project's own docs, not assumed from
+training data: Gemini's real OpenAI-compat endpoint is
+`generativelanguage.googleapis.com/v1beta/openai/chat/completions` with
+current model id `gemini-3.6-flash`; Ollama's is `{OLLAMA_HOST}/v1/chat/
+completions`, dummy API key). Added `ModelSpec.costTier: "free-local" |
+"cheap" | "premium"` and `RouterRequest.preferredCostTier` so a call site can
+ask for a tier instead of (or alongside) a specific model.
+`google-gemini-flash` → cheap, `ollama-local` → free-local, existing 4
+free-tier models stay cheap, `openrouter-deepseek-r1` stays the one premium
+entry. Also removed the dead `"cloudflare"` `ProviderName` (declared since
+before this repo's git history but never had a `callProvider` case, a
+`MODELS` entry, or an env var — same category of dead weight as SambaNova).
+
+**Local Ollama's host is whitelisted narrowly, not generally**: `whitelist.ts`
+reads `OLLAMA_HOST` once and allows that *exact* host:port string — same
+mechanism as the existing Turso/Upstash DB-host exceptions, deliberately not
+a general "allow private IPs" rule (that would be an SSRF door). No-op in
+production since `OLLAMA_HOST` is never set there; `route()`'s existing
+fall-through-on-error loop already handles an unreachable candidate
+correctly with zero special-casing (proved in `router.test.ts`).
+
+**Kimi K2 and Qwen were explicitly NOT added, on purpose.** Live-probed
+OpenRouter's model catalog (`api/v1/models`) on 2026-07-25: the closest
+current matches are `moonshotai/kimi-k3`, `moonshotai/kimi-k2.7-code`,
+`qwen/qwen3.7-plus`, `qwen/qwen3.7-max` — **none has a free-tier variant**
+(all have nonzero prompt pricing). The router's only cost-control mechanism
+today (`dailyQuota` + Redis quota tracking in `router.ts`) is a *request/
+token-count* budget, not a *dollar-spend* budget — it was built entirely
+around free-tier providers and has no concept of "stop before we've spent
+$X." Wiring in a paid-only model through that mechanism as-is would mean an
+autonomous agent (this router is called from cron-triggered code with no
+human in the loop per-call) could rack up real charges with nothing capping
+total spend.
+
+**Why:** Every other provider in this repo was chosen specifically for a
+free tier (see the `.env.example` "all free tiers" comment, and the original
+choice of Groq/Cerebras/OpenRouter over paid alternatives). Silently
+breaking that invariant by wiring in a paid model — even a cheap one — isn't
+a call to make without the user explicitly deciding on it and setting a
+spend cap; it's not something a live-probe result should quietly paper over
+by picking the closest-sounding paid model instead.
+
+**Consequences:** If/when a free tier appears for a Kimi- or Qwen-family
+model on OpenRouter (or elsewhere), adding it is now trivial — just a new
+`MODELS` entry, zero new provider code, exactly like `openrouter-deepseek-r1`
+already works. Until then, the *local Ollama* provider added in this same
+phase is the actual way to run open-weight Kimi/Qwen-family models for free
+today (pull one via `ollama pull`, point `OLLAMA_MODEL` at it) — with the
+caveat that it only works from a local dev server, never from the deployed
+production cron jobs. Flagged prominently for the user rather than silently
+delivered as "done."
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

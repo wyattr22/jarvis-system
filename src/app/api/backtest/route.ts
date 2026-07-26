@@ -1,77 +1,27 @@
 import { db } from "@/lib/db/client"
-import { runWalkForward } from "@/lib/validation/walk-forward"
+import { runWalkForward, backtestWalkForward, type SimTrade } from "@/lib/validation/walk-forward"
 import { getBars } from "@/lib/data/alpaca"
 import { checkBotSignal, DEFAULT_PARAMS, type StrategyParams } from "@/lib/backtest/bot-strategy"
+import { getSignalForStrategy } from "@/lib/strategy-engine/dispatch"
 import { getActiveUniverse } from "@/lib/universe/store"
 
 const DEFAULT_MAX_HOLD_BARS = 20  // ~5 hours on 15m
 const RISK_PER_TRADE = 100  // $100 notional risk per trade for PnL display
 const DEFAULT_SYMBOL_COUNT = 30   // universe top-N when no custom symbols given
 
-interface SimTrade {
-  instrument: string
-  direction: string
-  r_multiple: number
-  pnl: number | null
-  opened_at: number
-  closed_at: number | null
-  regime_tag: string | null
-}
-
-// ── Walk-forward on in-memory trades ─────────────────────────
-function inMemoryWalkForward(trades: SimTrade[], trainMonths = 2, testMonths = 1) {
-  if (trades.length < 20) {
-    return { windows: [], avgR: 0, avgWinRate: 0, avgSharpe: 0, consistent: false, passedMinWindows: false }
-  }
-
-  const MS_MONTH = 30 * 86_400_000
-  const first    = Math.min(...trades.map(t => t.opened_at))
-  const last     = Math.max(...trades.map(t => t.opened_at))
-
-  const windows: Array<{
-    trainStart: number; trainEnd: number
-    testStart: number; testEnd: number
-    testR: number; testWinRate: number; testSharpe: number; passed: boolean
-  }> = []
-
-  let cursor = first
-  while (cursor + (trainMonths + testMonths) * MS_MONTH <= last) {
-    const testStart = cursor + trainMonths * MS_MONTH
-    const testEnd   = testStart + testMonths * MS_MONTH
-    const batch     = trades.filter(t => t.opened_at >= testStart && t.opened_at < testEnd)
-
-    if (batch.length >= 3) {
-      const rs      = batch.map(t => t.r_multiple)
-      const avgR    = rs.reduce((s, r) => s + r, 0) / rs.length
-      const winRate = rs.filter(r => r > 0).length / rs.length
-      const std     = Math.sqrt(rs.reduce((s, r) => s + (r - avgR) ** 2, 0) / rs.length)
-      windows.push({
-        trainStart: cursor, trainEnd: testStart, testStart, testEnd,
-        testR: avgR, testWinRate: winRate,
-        testSharpe: std > 0 ? avgR / std : 0,
-        passed: avgR > 0 && winRate > 0.40,
-      })
-    }
-    cursor += testMonths * MS_MONTH
-  }
-
-  if (!windows.length) {
-    return { windows: [], avgR: 0, avgWinRate: 0, avgSharpe: 0, consistent: false, passedMinWindows: false }
-  }
-
-  const avgR      = windows.reduce((s, w) => s + w.testR, 0) / windows.length
-  const avgWinRate = windows.reduce((s, w) => s + w.testWinRate, 0) / windows.length
-  const avgSharpe  = windows.reduce((s, w) => s + w.testSharpe, 0) / windows.length
-  const rs = windows.map(w => w.testR)
-  const consistent = Math.max(...rs) <= Math.abs(Math.min(...rs)) * 1.5 + 0.1 || windows.every(w => w.passed)
-  return { windows, avgR, avgWinRate, avgSharpe, consistent, passedMinWindows: windows.length >= 4 }
-}
-
-// ── Historical simulation for one symbol using exact bot.py logic ──
+// ── Historical simulation for one symbol ──
+// When `paramOverrides` is given (the Strategy Builder's ad-hoc "tweak a
+// threshold" UI, 12.6) we run the legacy algorithm directly with those
+// overrides applied — that flow only ever makes sense for smc-ict-v4's own
+// tunable knobs. Otherwise (the common case, and what Phase 20's
+// candidate-testing loop uses) we dispatch by strategyId via
+// getSignalForStrategy (Phase 17), which is what makes strategyId actually
+// select behavior instead of being accepted-but-ignored.
 async function simulateSymbol(
   symbol: string,
   spyBars: ReturnType<typeof getBars> extends Promise<infer T> ? T : never,
-  p: StrategyParams = DEFAULT_PARAMS,
+  strategyId: string,
+  paramOverrides?: StrategyParams,
   maxHoldBars = DEFAULT_MAX_HOLD_BARS,
 ): Promise<SimTrade[]> {
   const [bars15m, dailyBars] = await Promise.all([
@@ -83,11 +33,15 @@ async function simulateSymbol(
 
   const trades: SimTrade[] = []
   let skipUntil = 0
+  const maxStopRiskPct = paramOverrides?.maxStopRiskPct ?? DEFAULT_PARAMS.maxStopRiskPct
+  const takeProfitPct = paramOverrides?.takeProfitPct ?? DEFAULT_PARAMS.takeProfitPct
 
   for (let i = 35; i < bars15m.length - maxHoldBars; i++) {
     if (i < skipUntil) continue
 
-    const signal = checkBotSignal(bars15m, dailyBars, spyBars, i, symbol, p)
+    const signal = paramOverrides
+      ? checkBotSignal(bars15m, dailyBars, spyBars, i, symbol, paramOverrides)
+      : await getSignalForStrategy(strategyId, bars15m, dailyBars, spyBars, i, symbol)
     if (!signal) continue
 
     // Enter at next bar's open
@@ -95,8 +49,8 @@ async function simulateSymbol(
     if (!entryBar) continue
     const entry = entryBar.o
     const sl    = signal.bias === 'bullish'
-      ? entry * (1 - p.maxStopRiskPct)
-      : entry * (1 + p.maxStopRiskPct)
+      ? entry * (1 - maxStopRiskPct)
+      : entry * (1 + maxStopRiskPct)
     const tp = signal.tp
 
     let r_multiple = 0
@@ -108,10 +62,10 @@ async function simulateSymbol(
       exitIdx = j
       if (signal.bias === 'bullish') {
         if (bar.l <= sl) { r_multiple = -1;                    exited = true; break }
-        if (bar.h >= tp) { r_multiple = p.takeProfitPct / p.maxStopRiskPct; exited = true; break }
+        if (bar.h >= tp) { r_multiple = takeProfitPct / maxStopRiskPct; exited = true; break }
       } else {
         if (bar.h >= sl) { r_multiple = -1;                    exited = true; break }
-        if (bar.l <= tp) { r_multiple = p.takeProfitPct / p.maxStopRiskPct; exited = true; break }
+        if (bar.l <= tp) { r_multiple = takeProfitPct / maxStopRiskPct; exited = true; break }
       }
     }
     if (!exited) continue
@@ -139,8 +93,13 @@ export async function POST(req: Request) {
   if (!strategyId) return Response.json({ error: 'strategyId required' }, { status: 400 })
 
   // Adjustable backtest (12.6): callers may override any strategy param,
-  // the symbol list, and max hold bars. Missing fields = exact bot.py logic.
-  const params: StrategyParams = { ...DEFAULT_PARAMS, ...(body.params ?? {}) }
+  // the symbol list, and max hold bars. paramOverrides only applies to
+  // smc-ict-v4's own tunable knobs directly via checkBotSignal — with no
+  // overrides, strategyId dispatches to whatever logic that id resolves to
+  // (Phase 17), interpreter-driven or legacy.
+  const paramOverrides: StrategyParams | undefined = body.params
+    ? { ...DEFAULT_PARAMS, ...body.params }
+    : undefined
   const maxHoldBars = Math.min(Math.max(Number(body.maxHoldBars ?? DEFAULT_MAX_HOLD_BARS), 2), 100)
   const custom = body.params || body.symbols || body.maxHoldBars
 
@@ -162,7 +121,7 @@ export async function POST(req: Request) {
       : await getActiveUniverse(DEFAULT_SYMBOL_COUNT)
 
     const symbolResults = await Promise.all(
-      symbols.map(sym => simulateSymbol(sym, spyBars, params, maxHoldBars).catch(() => [] as SimTrade[]))
+      symbols.map(sym => simulateSymbol(sym, spyBars, strategyId, paramOverrides, maxHoldBars).catch(() => [] as SimTrade[]))
     )
 
     const allTrades = symbolResults
@@ -176,11 +135,11 @@ export async function POST(req: Request) {
       })
     }
 
-    const result = inMemoryWalkForward(allTrades)
+    const result = backtestWalkForward(allTrades)
     const wins = allTrades.filter(t => t.r_multiple > 0).length
     return Response.json({
       ok: true, result, trades: allTrades, source: 'sim',
-      message: `${allTrades.length} simulated trades (${wins}W/${allTrades.length - wins}L) · ${custom ? 'custom params' : 'exact bot.py logic'} · ${symbols.length} symbols · 15m bars`,
+      message: `${allTrades.length} simulated trades (${wins}W/${allTrades.length - wins}L) · ${paramOverrides ? 'custom params' : 'strategy definition'} · ${symbols.length} symbols · 15m bars`,
     })
 
   } catch (err) {

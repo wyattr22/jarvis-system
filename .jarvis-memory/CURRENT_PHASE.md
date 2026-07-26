@@ -12,7 +12,7 @@ are missing.
 |---|---|---|
 | 15.1 | OANDA forex adapter + `signalToOpportunity` asset-class fix + per-asset-class market-hours gate | 🔍 in review, [PR #88](https://github.com/wyattr22/jarvis-system/pull/88) — needs real `OANDA_API_KEY`/`OANDA_ACCOUNT_ID` to verify (401 on the practice API with the key provided so far; likely a truncated copy-paste, unresolved) |
 | 16 | StrategyDefinition schema (`src/lib/strategy-engine/schema.ts`) + rule-engine interpreter (`interpreter.ts`) + indicator extraction (`indicators.ts`, re-imported by `bot-strategy.ts` unchanged) + `legacy-definition.ts` (smc-ict-v4 as data) — parity-tested bar-for-bar against `checkBotSignal` across 5 random synthetic price paths | ✅ this PR |
-| 17 | Wire rule engine into backtest + signal engine | queued |
+| 17 | Wire rule engine into backtest + signal engine — `strategy-engine/dispatch.ts` (`getSignalForStrategy`, lazy `definition_json` column, in-memory legacy fallback for smc-ict-v4 avoiding a manual prod migration), signal engine now iterates every `enabled` strategy over its own universe, backtest route dispatches by `strategyId` when no ad-hoc param override is given, `backtestWalkForward` extracted to `validation/walk-forward.ts` for Phase 20's zero-history-strategy case | ✅ this PR |
 | 18 | Capital-tier enforcement — closes a real gap: `capital_tier` is currently decorative | queued |
 | 19 | Multi-provider LLM router: Google Gemini Flash, local Ollama, OpenRouter Kimi K2/Qwen, cost tiers | queued |
 | 20 | Strategy-Author agent + council `new_strategy` proposal type | queued |

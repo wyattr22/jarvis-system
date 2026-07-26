@@ -28,6 +28,11 @@ export type OpportunityInput = {
   confidence?: number             // 0..1 confidence from the source itself
   expires_at?: number             // ms epoch; null means no explicit expiry
   source_payload?: Record<string, unknown>  // raw JSON kept for audit
+  /** Which strategies row generated this opportunity (Phase 18) — undefined
+   *  for non-Jarvis sources (splitwatch/swing_scanner) that have no notion
+   *  of a Jarvis strategy. This is what lets the auto-cycle look up the
+   *  originating strategy's capital_tier before ever executing anything. */
+  strategy_id?: string
 }
 
 export type Opportunity = OpportunityInput & {
@@ -65,6 +70,12 @@ async function ensureTable(): Promise<void> {
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_opp_source ON opportunities(source)`)
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_opp_status_created ON opportunities(status, created_at DESC)`)
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_opp_instrument ON opportunities(instrument)`)
+  // Phase 18: lazy column add, same pattern as ensureSemanticSchema() —
+  // nullable, so every pre-existing row (and every non-Jarvis source that
+  // never sets it) stays valid.
+  try {
+    await db.execute(`ALTER TABLE opportunities ADD COLUMN strategy_id TEXT`)
+  } catch { /* column already exists */ }
   tableReady = true
 }
 
@@ -106,7 +117,7 @@ export async function ingestOpportunity(input: OpportunityInput): Promise<{ id: 
       sql: `UPDATE opportunities
             SET thesis = ?, expected_r = ?, win_prob = ?, horizon_days = ?,
                 entry_hint = ?, stop_hint = ?, size_hint = ?, confidence = ?,
-                expires_at = ?, source_payload_json = ?, updated_at = ?
+                expires_at = ?, source_payload_json = ?, strategy_id = ?, updated_at = ?
             WHERE id = ?`,
       args: [
         input.thesis,
@@ -119,6 +130,7 @@ export async function ingestOpportunity(input: OpportunityInput): Promise<{ id: 
         input.confidence ?? null,
         input.expires_at ?? null,
         input.source_payload ? JSON.stringify(input.source_payload) : null,
+        input.strategy_id ?? null,
         now,
         existing,
       ],
@@ -132,8 +144,8 @@ export async function ingestOpportunity(input: OpportunityInput): Promise<{ id: 
             (id, source, asset_class, instrument, side, thesis,
              expected_r, win_prob, horizon_days, entry_hint, stop_hint,
              size_hint, confidence, expires_at, status, source_payload_json,
-             created_at, updated_at)
-          VALUES (?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,'open',?, ?,?)`,
+             strategy_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,'open',?, ?,?,?)`,
     args: [
       id,
       input.source,
@@ -150,6 +162,7 @@ export async function ingestOpportunity(input: OpportunityInput): Promise<{ id: 
       input.confidence ?? null,
       input.expires_at ?? null,
       input.source_payload ? JSON.stringify(input.source_payload) : null,
+      input.strategy_id ?? null,
       now,
       now,
     ],
@@ -186,6 +199,7 @@ function rowToOpportunity(row: Record<string, unknown>): Opportunity {
     confidence: row.confidence === null ? undefined : Number(row.confidence),
     expires_at: row.expires_at === null ? undefined : Number(row.expires_at),
     source_payload: payload,
+    strategy_id: row.strategy_id === null || row.strategy_id === undefined ? undefined : String(row.strategy_id),
     status: String(row.status) as OpportunityStatus,
     created_at: Number(row.created_at),
     updated_at: Number(row.updated_at),

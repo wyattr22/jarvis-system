@@ -15,11 +15,13 @@ import { getRiskConfig } from "@/lib/allocator/risk-config"
 import { buildPlan } from "@/lib/allocator/scorer"
 import { listOpportunities, ingestOpportunity, updateOpportunityStatus } from "@/lib/opportunities/store"
 import { getAdapter } from "@/lib/brokers"
+import type { AssetClass } from "@/lib/brokers/adapter"
 import { recordAllocation } from "@/lib/allocator/allocations"
 import { auditLog } from "@/lib/guardrails/audit"
 import { vetoAllocatorPlan } from "@/lib/agents/risk-manager"
 import { sendPushToAll } from "@/lib/push"
 import { db } from "@/lib/db/client"
+import { parseInstrument } from "@/lib/instruments/parse"
 
 const SIGNAL_MAX_AGE_MS = 6 * 60 * 60 * 1000
 
@@ -51,6 +53,11 @@ interface SignalRow {
   target: number | null
   confidence: number | null
   reasoning_json: string | null
+  /** Not yet used in the mapped opportunity — wired up in Phase 18's
+   *  capital-tier enforcement, which needs to trace an opportunity back to
+   *  the strategy that generated it. Selected here so that phase doesn't
+   *  need its own column addition to this query. */
+  strategy_id: string | null
 }
 
 // Exported for tests — pure signal→opportunity mapping.
@@ -66,7 +73,10 @@ export function signalToOpportunity(sig: SignalRow): Parameters<typeof ingestOpp
   } catch { /* keep default */ }
   return {
     source: "jarvis",
-    asset_class: "equity",
+    // Derived from the instrument's own symbology (Phase 15) rather than
+    // hardcoded — this is the one change that lets a forex/futures signal
+    // ever reach a non-equity broker adapter downstream.
+    asset_class: parseInstrument(sig.instrument).assetClass,
     instrument: sig.instrument,
     side: sig.direction === "long" ? "long" : "short",
     thesis,
@@ -78,12 +88,16 @@ export function signalToOpportunity(sig: SignalRow): Parameters<typeof ingestOpp
     confidence: sig.confidence ?? undefined,
     expires_at: Date.now() + 24 * 60 * 60 * 1000,
     source_payload: { signal_id: sig.id },
+    // Phase 18: traces this opportunity back to the strategy that generated
+    // it, so the shadow-tier gate below can look up capital_tier before
+    // anything executes.
+    strategy_id: sig.strategy_id ?? undefined,
   }
 }
 
 async function promoteSignals(): Promise<number> {
   const res = await db.execute({
-    sql: `SELECT id, instrument, direction, entry, stop, target, confidence, reasoning_json
+    sql: `SELECT id, instrument, direction, entry, stop, target, confidence, reasoning_json, strategy_id
           FROM signals WHERE status = 'pending' AND created_at > ?
           ORDER BY created_at DESC LIMIT 50`,
     args: [Date.now() - SIGNAL_MAX_AGE_MS],
@@ -129,13 +143,33 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
     return base
   }
 
-  const opps = await listOpportunities({ status: "open", limit: 200 })
+  const allOpps = await listOpportunities({ status: "open", limit: 200 })
   const equityAdapter = getAdapter("equity")
 
-  // Market-hours gate: don't fire market orders into a closed book.
-  if (!(await equityAdapter.isOpen().catch(() => false))) {
+  // Market-hours gate (Phase 15): each asset class trades on its own
+  // schedule — forex runs ~24/5 while equity trades ~6.5h/day — so gating
+  // the whole cycle on equity hours would silently starve every other asset
+  // class the moment it got a real (non-stub) adapter. Check per class
+  // instead and only let an opportunity through if ITS market is open.
+  const classesInPlay = Array.from(new Set(allOpps.map(o => o.asset_class))) as AssetClass[]
+  const openByClass = new Map<AssetClass, boolean>()
+  for (const cls of classesInPlay) {
+    // getAdapter() itself throws synchronously for unregistered classes
+    // (e.g. options/prediction today) — treat that the same as "closed"
+    // rather than letting it crash the whole cycle for every asset class.
+    try {
+      openByClass.set(cls, await getAdapter(cls).isOpen())
+    } catch {
+      openByClass.set(cls, false)
+    }
+  }
+  const opps = allOpps.filter(o => openByClass.get(o.asset_class) === true)
+
+  if (opps.length === 0) {
     base.tookMs = Date.now() - started
-    await auditLog("auto-execute", "cycle_market_closed", { promoted }).catch(() => {})
+    await auditLog("auto-execute", "cycle_market_closed", {
+      promoted, classesChecked: classesInPlay,
+    }).catch(() => {})
     return base
   }
 
@@ -174,9 +208,48 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
   }
 
   const perOppAllow = new Map(veto.per_opportunity.map(p => [p.opportunity_id, p]))
-  const eligible = plan.rows
+  const approved = plan.rows
     .filter(r => r.status === "approved" && perOppAllow.get(r.opportunity.id)?.allow === true)
-    .slice(0, Math.max(0, config.auto_max_orders_per_cycle))
+
+  // Shadow-tier gate (18): capital_tier 0 means "generate signals for
+  // observation, never trade real (paper) capital" — this is the actual
+  // enforcement behind the label /strategies displays. Every strategy,
+  // human- or LLM-authored, is inserted at tier 0 until a human promotes it;
+  // without this gate, an unproven strategy's signals would be sized and
+  // executed identically to one that's earned that trust.
+  const strategyIds = Array.from(new Set(
+    approved.map(r => r.opportunity.strategy_id).filter((id): id is string => Boolean(id))
+  ))
+  const tierById = new Map<string, number>()
+  if (strategyIds.length) {
+    const placeholders = strategyIds.map(() => "?").join(",")
+    const tierRes = await db.execute({
+      sql: `SELECT id, capital_tier FROM strategies WHERE id IN (${placeholders})`,
+      args: strategyIds,
+    })
+    for (const r of tierRes.rows) {
+      tierById.set(String(r.id), Number(r.capital_tier ?? 0))
+    }
+  }
+
+  const eligible: typeof approved = []
+  for (const row of approved) {
+    const sid = row.opportunity.strategy_id
+    // No strategy_id at all = a non-Jarvis source (splitwatch/swing_scanner)
+    // — untouched by this gate, exactly as before Phase 18.
+    if (!sid) { eligible.push(row); continue }
+    const tier = tierById.get(sid)
+    // Unknown strategy_id (no matching row) is treated the same as tier 0 —
+    // fail closed rather than trust a reference that doesn't resolve.
+    if (tier === undefined || tier === 0) {
+      await auditLog("auto-execute", "cycle_shadow_strategy_blocked", {
+        strategy_id: sid, opportunity_id: row.opportunity.id, tier: tier ?? "unknown",
+      }).catch(() => {})
+      continue
+    }
+    eligible.push(row)
+  }
+  eligible.splice(Math.max(0, config.auto_max_orders_per_cycle))
 
   for (const row of eligible) {
     const opp = row.opportunity

@@ -16,8 +16,16 @@ Append open items here. Close them out with a strike-through + date when fixed.
   around it by injecting stub env vars. Cleaner fix: lazy-init the SDK
   inside each handler so build-time evaluation doesn't crash.
 
-- **Lint config not tuned** — `next lint` in CI is currently `|| true`.
-  Need a follow-up PR to fix any real issues and flip to hard-fail.
+- **`npm run lint` (`next lint`) is fully broken, not just untuned** — updated
+  2026-07-25 (Phase 15): Next.js 16 removed the `next lint` command entirely
+  (confirmed in `node_modules/next/dist/docs/01-app/02-guides/upgrading/
+  version-16.md`); running it now fails immediately with "Invalid project
+  directory provided" instead of linting anything. There's also no
+  `eslint.config.*` in the repo, so `eslint .` has nothing to run against
+  either. Verified via `tsc --noEmit` + `vitest run` + `next build` instead
+  for Phase 15. Real fix: run the `next-lint-to-eslint-cli` codemod
+  (`node_modules/next/dist/docs/.../codemods.md`), add a flat ESLint config,
+  and repoint the `lint` script + CI at `eslint .`.
 
 - **`domain/mcp-tool-catalog.md` referenced by INDEX.md but the file doesn't
   exist.** The registry smoke test (`registry.test.ts`) is the real catalog

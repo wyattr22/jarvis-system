@@ -16,7 +16,10 @@ this. New architectural decisions go in `DECISIONS.md`. Open blockers go in
 `KNOWN_ISSUES.md`.
 
 The full plan we're executing against lives at
-`/Users/wyattrantz/.claude/plans/ive-had-an-idea-curried-dawn.md`.
+`/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md` (Phases 15–21,
+started 2026-07-25). Earlier plans (e.g. `ive-had-an-idea-curried-dawn.md`,
+`ok-i-want-to-sprightly-puppy.md`) are superseded — phases 11–14 they covered
+are complete; see `CURRENT_PHASE.md` for what's still open.
 
 ## Workflow
 

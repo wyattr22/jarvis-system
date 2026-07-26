@@ -18,7 +18,11 @@ type Strategy = {
   win_rate: number | null
 }
 
-const TIER_LABEL = ["INACTIVE", "1% PAPER", "5% LIVE", "FULL SIZE"]
+// Tier 0 = shadow (Phase 18): generates signals/opportunities for
+// observation only — auto-cycle's shadow-tier gate blocks it from ever
+// reaching a broker, regardless of what the allocator/risk-manager approved.
+// Every new strategy (human- or LLM-authored) starts here until promoted.
+const TIER_LABEL = ["SHADOW", "1% PAPER", "5% LIVE", "FULL SIZE"]
 
 export default function StrategiesPage() {
   const [strategies, setStrategies] = useState<Strategy[]>([])
@@ -80,7 +84,11 @@ export default function StrategiesPage() {
                     <Badge variant="outline" className={`text-[9px] ${s.enabled ? "text-primary border-primary/30" : "text-yellow-400 border-yellow-400/30"}`}>
                       {s.enabled ? "ACTIVE" : "PAUSED"}
                     </Badge>
-                    <span className="text-[9px] text-muted-foreground border border-border rounded px-1">
+                    <span className={`text-[9px] border rounded px-1 ${
+                      s.capital_tier === 0
+                        ? "text-red-400 border-red-400/30"
+                        : "text-muted-foreground border-border"
+                    }`}>
                       {TIER_LABEL[s.capital_tier] ?? `TIER ${s.capital_tier}`}
                     </span>
                   </div>
@@ -152,6 +160,7 @@ export default function StrategiesPage() {
               <div>
                 <p className="text-[10px] text-muted-foreground tracking-widest mb-1">CAPITAL TIER GATES</p>
                 <div className="space-y-1 text-[10px]">
+                  <p className="text-muted-foreground">Tier 0 (shadow): signals generate for observation only — auto-cycle blocks execution regardless of allocator/risk-manager approval</p>
                   <p className="text-muted-foreground">Tier 1→2: 30 profitable trades + 60 days paper</p>
                   <p className="text-muted-foreground">Tier 2→3: 90 profitable trades + Sharpe &gt; 1.0</p>
                   <p className="text-muted-foreground">All council proposals require 50 shadow trades + p &lt; 0.05</p>

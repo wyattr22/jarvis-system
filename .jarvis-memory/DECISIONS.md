@@ -117,6 +117,102 @@ actually fire, flagged here rather than silently assumed to work.
 
 ---
 
+## 2026-07-25 — Phase 18: capital_tier enforcement (a real gap, not a hypothetical)
+
+**Context:** Found during planning, independent of everything else in this
+multi-phase plan: `strategies.capital_tier` was purely a UI label.
+`buildPlan`/`vetoAllocatorPlan`/`runAutoCycle` never referenced it, and
+`opportunities` had no `strategy_id` column at all — nothing traced an
+opportunity back to the strategy that generated it. Concretely: adding a
+second strategy row via `scripts/seed-strategies.mjs` right now, before this
+PR, would have its signals executed with full weight immediately, identically
+to `smc-ict-v4`. The council/proposal review process protecting live paper
+capital was real, but nothing enforced its outcome at execution time.
+
+**Decision:** `opportunities.strategy_id` (lazy `ALTER TABLE`, nullable —
+non-Jarvis sources like splitwatch never set it and are unaffected).
+`signalToOpportunity()` populates it from the signal's own `strategy_id`
+(already selected in Phase 15's `SignalRow` for exactly this purpose).
+`runAutoCycle()` now batch-fetches `capital_tier` for every distinct
+strategy among that cycle's risk-approved opportunities and drops any row
+whose strategy resolves to tier 0 **or has a strategy_id that doesn't
+resolve to any row at all** (fail closed on an unknown reference, not fail
+open) — before `adapter.place()` is ever reached, not as a UI-only
+indicator. Blocked rows get `auditLog("auto-execute",
+"cycle_shadow_strategy_blocked", {...})`, visible on `/agent-log` exactly
+like the existing PDT guard. `capital_tier` semantics are now explicit:
+**0 = shadow, generates signals for observation only, never executes**;
+1/2/3 unchanged. Every new strategy — human- or LLM-authored — is always
+inserted at tier 0.
+
+Proved with `auto-cycle.shadow-tier.test.ts`: a real in-memory libsql DB
+(not mocked SQL — every module's actual queries run) plus a fake equity
+broker adapter (to avoid real Alpaca network calls in tests), two signals
+from a tier-0 and a tier-1 strategy both promoted to opportunities, only the
+tier-1 one reaches `place()` (asserted via call count AND call arguments),
+the tier-0 one's opportunity status stays `open` (never `executed`), and an
+audit-log row records the block.
+
+**Why:** This is the enforcement mechanism the whole rest of the plan's
+safety story depends on — Phase 20's Strategy-Author agent can propose
+whatever it wants, but every strategy it (or a human) creates lands at tier
+0 by construction, and tier 0 now structurally cannot trade regardless of
+what the allocator or risk-manager approves upstream.
+
+**Consequences:** This phase is worth its own merit independent of whether
+Phase 20 ever ships — the gap was real today with zero LLM involvement.
+Re-run `auto-cycle.shadow-tier.test.ts` after Phase 20 lands as the concrete
+proof the gate still holds once the system can create tier-0 strategies
+autonomously, not just when a human inserts one by hand for a test.
+
+---
+
+## 2026-07-25 — Phase 15: OANDA forex adapter + per-asset-class market-hours gate
+
+**Context:** Starting a multi-phase plan (Phases 15–21, full plan at
+`/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`) toward
+self-authoring strategies, a multi-provider LLM router, OANDA forex
+execution, and a knowledge-graph "brain." Phase 15 is the first, self-contained
+step: forex had price data but zero execution — `ForexAdapterStub` threw on
+every method, and `signalToOpportunity()` hardcoded `asset_class: "equity"`
+regardless of the signal's real instrument, so the live execution pipeline
+was 100% equity-only even though `getAdapter()` dispatch was already generic.
+
+**Decision:** Implemented `OandaAdapter` against OANDA's v20 REST practice
+API (per `forex.ts`'s own header comment naming it the recommended first
+forex provider — zero credit card, matches every other free-tier choice in
+this repo). Registry (`brokers/index.ts`) picks it when `OANDA_API_KEY` is
+set, else falls back to the existing stub rather than crashing. Fixed
+`signalToOpportunity()` to derive `asset_class` via the existing
+`parseInstrument()` util instead of hardcoding it.
+
+While fixing the hardcode, found and fixed a second problem in the same
+function's caller: `runAutoCycle()`'s market-hours gate checked only
+`equityAdapter.isOpen()` and aborted the **entire** cycle if equity was
+closed — harmless before this PR (forex never got real opportunities to
+abort), but would have silently starved forex trading outside the ~6.5h/day
+US equity window once forex signals became possible. Changed the gate to
+check `isOpen()` per asset class actually present in the day's opportunities
+and filter per-class instead of a single global abort.
+
+**Why:** OANDA over other forex candidates (FXCM deprecated, IBKR needs a
+funded account) — matches the free-practice-tier bar every other provider in
+this repo was picked against. Per-class market-hours gating over a shared
+gate — forex trades ~24/5 while equity trades ~6.5h/day; a shared gate makes
+the feature nominally exist but practically inert for forex.
+
+**Consequences:** Equity/positions/day-P&L used for allocator sizing
+(`buildPlan`) and the PDT guard still come from the equity adapter only —
+OANDA's own equity and open positions aren't yet part of the shared capital
+pool or cross-asset exposure tracking (pre-existing limitation, documented
+inline in `scorer.ts` since before this PR — not introduced or fixed here).
+Also, the equity-only PDT guard can still veto the *entire* cycle (including
+forex, which isn't subject to PDT rules) when day-trades are high — an
+over-conservative but fail-safe behavior, left as-is for this phase rather
+than expanding scope into a cross-broker allocator redesign.
+
+---
+
 ## 2026-06-26 — Branch-per-step + PR review workflow
 
 **Context:** Project had a single commit on `main` and no GitHub remote. Solo

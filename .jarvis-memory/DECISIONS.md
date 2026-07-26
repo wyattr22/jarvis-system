@@ -117,6 +117,56 @@ actually fire, flagged here rather than silently assumed to work.
 
 ---
 
+## 2026-07-25 — Phase 18: capital_tier enforcement (a real gap, not a hypothetical)
+
+**Context:** Found during planning, independent of everything else in this
+multi-phase plan: `strategies.capital_tier` was purely a UI label.
+`buildPlan`/`vetoAllocatorPlan`/`runAutoCycle` never referenced it, and
+`opportunities` had no `strategy_id` column at all — nothing traced an
+opportunity back to the strategy that generated it. Concretely: adding a
+second strategy row via `scripts/seed-strategies.mjs` right now, before this
+PR, would have its signals executed with full weight immediately, identically
+to `smc-ict-v4`. The council/proposal review process protecting live paper
+capital was real, but nothing enforced its outcome at execution time.
+
+**Decision:** `opportunities.strategy_id` (lazy `ALTER TABLE`, nullable —
+non-Jarvis sources like splitwatch never set it and are unaffected).
+`signalToOpportunity()` populates it from the signal's own `strategy_id`
+(already selected in Phase 15's `SignalRow` for exactly this purpose).
+`runAutoCycle()` now batch-fetches `capital_tier` for every distinct
+strategy among that cycle's risk-approved opportunities and drops any row
+whose strategy resolves to tier 0 **or has a strategy_id that doesn't
+resolve to any row at all** (fail closed on an unknown reference, not fail
+open) — before `adapter.place()` is ever reached, not as a UI-only
+indicator. Blocked rows get `auditLog("auto-execute",
+"cycle_shadow_strategy_blocked", {...})`, visible on `/agent-log` exactly
+like the existing PDT guard. `capital_tier` semantics are now explicit:
+**0 = shadow, generates signals for observation only, never executes**;
+1/2/3 unchanged. Every new strategy — human- or LLM-authored — is always
+inserted at tier 0.
+
+Proved with `auto-cycle.shadow-tier.test.ts`: a real in-memory libsql DB
+(not mocked SQL — every module's actual queries run) plus a fake equity
+broker adapter (to avoid real Alpaca network calls in tests), two signals
+from a tier-0 and a tier-1 strategy both promoted to opportunities, only the
+tier-1 one reaches `place()` (asserted via call count AND call arguments),
+the tier-0 one's opportunity status stays `open` (never `executed`), and an
+audit-log row records the block.
+
+**Why:** This is the enforcement mechanism the whole rest of the plan's
+safety story depends on — Phase 20's Strategy-Author agent can propose
+whatever it wants, but every strategy it (or a human) creates lands at tier
+0 by construction, and tier 0 now structurally cannot trade regardless of
+what the allocator or risk-manager approves upstream.
+
+**Consequences:** This phase is worth its own merit independent of whether
+Phase 20 ever ships — the gap was real today with zero LLM involvement.
+Re-run `auto-cycle.shadow-tier.test.ts` after Phase 20 lands as the concrete
+proof the gate still holds once the system can create tier-0 strategies
+autonomously, not just when a human inserts one by hand for a test.
+
+---
+
 ## 2026-07-25 — Phase 15: OANDA forex adapter + per-asset-class market-hours gate
 
 **Context:** Starting a multi-phase plan (Phases 15–21, full plan at

@@ -88,6 +88,10 @@ export function signalToOpportunity(sig: SignalRow): Parameters<typeof ingestOpp
     confidence: sig.confidence ?? undefined,
     expires_at: Date.now() + 24 * 60 * 60 * 1000,
     source_payload: { signal_id: sig.id },
+    // Phase 18: traces this opportunity back to the strategy that generated
+    // it, so the shadow-tier gate below can look up capital_tier before
+    // anything executes.
+    strategy_id: sig.strategy_id ?? undefined,
   }
 }
 
@@ -204,9 +208,48 @@ export async function runAutoCycle(): Promise<AutoCycleResult> {
   }
 
   const perOppAllow = new Map(veto.per_opportunity.map(p => [p.opportunity_id, p]))
-  const eligible = plan.rows
+  const approved = plan.rows
     .filter(r => r.status === "approved" && perOppAllow.get(r.opportunity.id)?.allow === true)
-    .slice(0, Math.max(0, config.auto_max_orders_per_cycle))
+
+  // Shadow-tier gate (18): capital_tier 0 means "generate signals for
+  // observation, never trade real (paper) capital" — this is the actual
+  // enforcement behind the label /strategies displays. Every strategy,
+  // human- or LLM-authored, is inserted at tier 0 until a human promotes it;
+  // without this gate, an unproven strategy's signals would be sized and
+  // executed identically to one that's earned that trust.
+  const strategyIds = Array.from(new Set(
+    approved.map(r => r.opportunity.strategy_id).filter((id): id is string => Boolean(id))
+  ))
+  const tierById = new Map<string, number>()
+  if (strategyIds.length) {
+    const placeholders = strategyIds.map(() => "?").join(",")
+    const tierRes = await db.execute({
+      sql: `SELECT id, capital_tier FROM strategies WHERE id IN (${placeholders})`,
+      args: strategyIds,
+    })
+    for (const r of tierRes.rows) {
+      tierById.set(String(r.id), Number(r.capital_tier ?? 0))
+    }
+  }
+
+  const eligible: typeof approved = []
+  for (const row of approved) {
+    const sid = row.opportunity.strategy_id
+    // No strategy_id at all = a non-Jarvis source (splitwatch/swing_scanner)
+    // — untouched by this gate, exactly as before Phase 18.
+    if (!sid) { eligible.push(row); continue }
+    const tier = tierById.get(sid)
+    // Unknown strategy_id (no matching row) is treated the same as tier 0 —
+    // fail closed rather than trust a reference that doesn't resolve.
+    if (tier === undefined || tier === 0) {
+      await auditLog("auto-execute", "cycle_shadow_strategy_blocked", {
+        strategy_id: sid, opportunity_id: row.opportunity.id, tier: tier ?? "unknown",
+      }).catch(() => {})
+      continue
+    }
+    eligible.push(row)
+  }
+  eligible.splice(Math.max(0, config.auto_max_orders_per_cycle))
 
   for (const row of eligible) {
     const opp = row.opportunity

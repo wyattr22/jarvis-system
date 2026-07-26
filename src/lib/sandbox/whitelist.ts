@@ -18,6 +18,8 @@ const ALLOWED_HOSTS = new Set<string>([
   "query2.finance.yahoo.com",
   "www.alphavantage.co",
   "finnhub.io",
+  // OANDA forex (paper/practice) — Phase 15
+  "api-fxpractice.oanda.com",
   // SEC + public filings
   "data.sec.gov",
   "efts.sec.gov",

@@ -1,5 +1,25 @@
 # Current Phase
 
+**Phase 15 — Self-authoring strategies, multi-provider LLM, OANDA, brain (started 2026-07-25).**
+Full plan: `/Users/wyattrantz/.claude/plans/lovely-snacking-glacier.md`. Seven
+phases, numbered continuing from 14.2: 15 OANDA + asset-class fix → 16
+StrategyDefinition schema/interpreter → 17 wire into backtest/signals → 18
+capital-tier enforcement (real safety gap found during planning — see
+DECISIONS.md) → 19 multi-provider LLM router (Google/Ollama/Kimi/Qwen + cost
+tiers) → 20 Strategy-Author agent + council `new_strategy` proposal type → 21
+knowledge-graph brain (in-app graph + Obsidian export). Each phase = its own
+branch/PR per the existing convention.
+
+| Step | What | Status |
+|---|---|---|
+| 15.1 | OANDA forex adapter (`brokers/oanda.ts`, v20 REST practice API) + `signalToOpportunity` asset-class fix (was hardcoded `"equity"`) + per-asset-class market-hours gate in `auto-cycle.ts` (found: the old global equity-only gate would have silently starved forex once it could get real signals) | ✅ this PR |
+| 16 | StrategyDefinition schema + rule-engine interpreter (unwired) | queued |
+| 17 | Wire rule engine into backtest + signal engine | queued |
+| 18 | Capital-tier enforcement — closes a real gap: `capital_tier` is currently decorative, nothing stops a new strategy's signals from executing at full weight today | queued |
+| 19 | Multi-provider LLM router: Google Gemini Flash, local Ollama, OpenRouter Kimi K2/Qwen, cost tiers | queued |
+| 20 | Strategy-Author agent + council `new_strategy` proposal type | queued |
+| 21 | Knowledge-graph brain: in-app force-directed graph + Obsidian markdown export | queued |
+
 **Phase 12 — Trading Engine Overhaul: COMPLETE (12.1–12.11, 2026-07-06 → 2026-07-10).** Phase 11 complete.
 
 ## Phase 14 — Optimization (started 2026-07-10)

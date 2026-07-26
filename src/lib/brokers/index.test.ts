@@ -1,6 +1,6 @@
 // Unit tests for the adapter registry.
 
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, afterEach, vi } from "vitest"
 import { getAdapter, listAdapters } from "./index"
 
 describe("getAdapter", () => {
@@ -37,5 +37,25 @@ describe("listAdapters", () => {
     expect(list.length).toBeGreaterThanOrEqual(4)
     expect(list.map(a => a.assetClass).sort()).toContain("equity")
     expect(list.map(a => a.assetClass).sort()).toContain("futures")
+  })
+})
+
+describe("forex adapter selection (Phase 15)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it("falls back to the stub when OANDA_API_KEY is unset", () => {
+    // Covered by the "returns forex stub" case above too, but explicit here
+    // since this whole describe block is about the env-driven branch.
+    expect(getAdapter("forex").id).toBe("forex-stub")
+  })
+
+  it("selects OandaAdapter once OANDA_API_KEY is configured", async () => {
+    vi.stubEnv("OANDA_API_KEY", "test-key")
+    vi.resetModules()
+    const { getAdapter: getAdapterFresh } = await import("./index")
+    expect(getAdapterFresh("forex").id).toBe("oanda")
   })
 })
